@@ -1,0 +1,27 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+.env
+.env.*
+
+# ML / media (download locally)
+*.pt
+*.pth
+*.onnx
+*.tflite
+runs/
+weights/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Logs / cache
+*.log
+.mypy_cache/
+.pytest_cache/
