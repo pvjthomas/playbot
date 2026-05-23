@@ -85,7 +85,7 @@ docker run --rm lightsaber
 
 | Developer | Branch | Owns |
 |-----------|--------|------|
-| **1 — Vision** | `feature/vision` | `camera.py`, `vision.py`, `overlays.py` |
+| **1 — Vision** | `feature/vision` | `camera.py`, `vision.py`, `overlays.py` — see **[task-vision.md](task-vision.md)** |
 | **2 — Robot** | `feature/robot` | `robot.py`, `poses.py`, `safety.py`, `movement_trainer.py` |
 | **3 — App** | `feature/demo` | `main.py`, `dashboard.py`, `sounds.py`, `README.md` |
 
