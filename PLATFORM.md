@@ -6,7 +6,7 @@
 |------|-------|----------------|
 | Vision (webcam, MediaPipe, YOLO) | Supported | Supported |
 | App (main loop, sounds, dashboard) | Supported | Supported |
-| PiPER arm over CAN | Not recommended | **Required for live hardware** |
+| PiPER arm over CAN | **Experimental** (`gs_usb`, see [MAC-ROBOT.md](MAC-ROBOT.md)) | **Recommended** (SocketCAN `can0`) |
 | Milestone 1 (DRY_RUN stubs) | Yes | Yes |
 
 The project is **not Ubuntu-only**. Only **real robot motion** needs Linux with CAN.
@@ -26,11 +26,29 @@ python main.py
 
 - Use `USE_FAKE_ATTACKS = True` in `config.py` if the camera is unavailable.
 - `pip` may only exist inside `.venv` (not globally).
-- USB-CAN adapters often **do not** show up as `can0`; robot hardware is usually blocked on Mac.
+- USB-CAN on Mac: no kernel `can0`; use **python-can `gs_usb`** with the adapter plugged into the **Mac** (not the Apple-Virtualization VM).
+- Full steps: **[MAC-ROBOT.md](MAC-ROBOT.md)** — `brew install libusb`, `pip install "python-can[gs-usb]"`, `python robot_discover.py` on the host.
+
+```bash
+cd projects/lightsaber && source .venv/bin/activate
+brew install libusb
+pip install "python-can[gs-usb]"
+python robot_discover.py          # adapter on Mac USB
+python robot_smoke.py --connect   # LIVE connect, no motion (set DRY_RUN=False for --connect)
+```
+
+Code: `can_platform.py` + `config.CAN_BUSTYPE` (`auto` → `gs_usb` on Darwin).
 
 ---
 
 ## Ubuntu (Developer 2 — robot)
+
+**VM:** UTM guest **`playbot-ubuntu-robot`** (Ubuntu 24.04 ARM64) — see **`projects/ubuntu_shared/ENVIRONMENT.md`** and [SSH-SETUP.md](../ubuntu_shared/SSH-SETUP.md). Mac share: **`/Users/fio/UbuntuShared`**.
+
+```bash
+ssh philip@192.168.64.2
+# or: ssh ubuntu-robot   (after ~/.ssh/config setup)
+```
 
 **Good for:** `piper_sdk`, SocketCAN, `can0` at 1 Mbps.
 

@@ -152,14 +152,18 @@ class SaberDetector:
         tip_x = int((wrist.x + ux * blade_norm) * w)
         tip_y = int((wrist.y + uy * blade_norm) * h)
 
+        color_tip = False
         if config.SABER_USE_COLOR_TIP:
             refined = self._refine_tip_with_color(frame, grip_x, grip_y, tip_x, tip_y)
             if refined is not None:
                 tip_x, tip_y = refined
+                color_tip = True
 
         angle = math.degrees(math.atan2(tip_y - grip_y, tip_x - grip_x))
         orient = orientation_from_angle(angle)
         conf = min(1.0, reach / 0.25)
+        if color_tip:
+            conf = min(1.0, conf + 0.2)
 
         return SaberLine(
             grip_x=grip_x,
@@ -174,30 +178,110 @@ class SaberDetector:
     def _refine_tip_with_color(
         self, frame: Frame, gx: int, gy: int, tx: int, ty: int
     ) -> tuple[int, int] | None:
-        """Scan along grip→tip for brightest or HSV-matched blob (tape on tip)."""
+        """Find blade tip via HSV (e.g. red toy) along forearm direction."""
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        mask = self._color_mask(hsv)
+        if mask is None:
+            return self._refine_tip_brightness(frame, gx, gy, tx, ty)
+
+        tip = self._farthest_color_point_along_blade(mask, gx, gy, tx, ty)
+        if tip is not None:
+            return tip
+        return None
+
+    @staticmethod
+    def _color_mask(hsv: np.ndarray) -> np.ndarray | None:
+        ranges = getattr(config, "SABER_COLOR_HSV_RANGES", None)
+        if ranges:
+            mask = np.zeros(hsv.shape[:2], dtype=np.uint8)
+            for lo, hi in ranges:
+                mask |= cv2.inRange(hsv, np.array(lo, dtype=np.uint8), np.array(hi, dtype=np.uint8))
+            return mask
+        if config.SABER_TIP_HSV_LOW is not None and config.SABER_TIP_HSV_HIGH is not None:
+            lo = np.array(config.SABER_TIP_HSV_LOW, dtype=np.uint8)
+            hi = np.array(config.SABER_TIP_HSV_HIGH, dtype=np.uint8)
+            return cv2.inRange(hsv, lo, hi)
+        return None
+
+    @staticmethod
+    def color_debug_mask(frame: Frame) -> np.ndarray | None:
+        """BGR preview of active color mask (for tuning redtoy HSV)."""
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        mask = SaberDetector._color_mask(hsv)
+        if mask is None:
+            return None
+        return cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+
+    def _farthest_color_point_along_blade(
+        self,
+        mask: np.ndarray,
+        gx: int,
+        gy: int,
+        tx: int,
+        ty: int,
+    ) -> tuple[int, int] | None:
+        """Tip = farthest matching pixel from grip, searched along forearm ray."""
+        dx, dy = tx - gx, ty - gy
+        length = math.hypot(dx, dy)
+        if length < 8:
+            return None
+        ux, uy = dx / length, dy / length
+        radius = int(getattr(config, "SABER_COLOR_SEARCH_RADIUS_PX", 35))
+        min_pixels = int(getattr(config, "SABER_MIN_COLOR_PIXELS", 20))
+        h, w = mask.shape[:2]
+
+        best_pt: tuple[int, int] | None = None
+        best_dist = 0.0
+        steps = max(24, int(length // 4))
+
+        for i in range(1, steps + 1):
+            t = i / steps
+            cx = int(gx + dx * t)
+            cy = int(gy + dy * t)
+            if not (0 <= cx < w and 0 <= cy < h):
+                break
+
+            x0 = max(0, cx - radius)
+            x1 = min(w, cx + radius + 1)
+            y0 = max(0, cy - radius)
+            y1 = min(h, cy + radius + 1)
+            patch = mask[y0:y1, x0:x1]
+            if patch.size == 0 or cv2.countNonZero(patch) < min_pixels // steps:
+                continue
+
+            ys, xs = np.where(patch > 0)
+            for x, y in zip(xs, ys, strict=False):
+                px, py = x0 + int(x), y0 + int(y)
+                along = (px - gx) * ux + (py - gy) * uy
+                if along < 10:
+                    continue
+                perp = abs((px - gx) * (-uy) + (py - gy) * ux)
+                if perp > radius * 1.2:
+                    continue
+                if along > best_dist:
+                    best_dist = along
+                    best_pt = (px, py)
+
+        return best_pt
+
+    @staticmethod
+    def _refine_tip_brightness(
+        frame: Frame, gx: int, gy: int, tx: int, ty: int
+    ) -> tuple[int, int] | None:
         steps = 20
         best_score = -1.0
         best_pt = None
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        use_hsv = config.SABER_TIP_HSV_LOW is not None and config.SABER_TIP_HSV_HIGH is not None
-
         for i in range(1, steps + 1):
             t = i / steps
             x = int(gx + (tx - gx) * t)
             y = int(gy + (ty - gy) * t)
             if not (0 <= x < frame.shape[1] and 0 <= y < frame.shape[0]):
                 break
-            if use_hsv:
-                lo = np.array(config.SABER_TIP_HSV_LOW, dtype=np.uint8)
-                hi = np.array(config.SABER_TIP_HSV_HIGH, dtype=np.uint8)
-                score = 1.0 if cv2.inRange(hsv[y : y + 1, x : x + 1], lo, hi)[0, 0] else 0.0
-            else:
-                b, g, r = frame[y, x]
-                score = float(r) + float(g) * 0.5  # bright / warm tip
+            b, g, r = frame[y, x]
+            score = float(r) + float(g) * 0.5
             if score > best_score:
                 best_score = score
                 best_pt = (x, y)
-
         if best_score > 0 and best_pt is not None:
             return best_pt
         return None
@@ -251,22 +335,28 @@ class SaberDetector:
             self._pose.close()
 
 
-def draw_saber_overlay(frame: Frame, saber: SaberLine | None) -> Frame:
+def draw_saber_overlay(frame: Frame, saber: SaberLine | None, *, color: tuple[int, int, int] | None = None) -> Frame:
     """Draw grip→tip line and orientation label (BGR)."""
     if saber is None:
         return frame
     out = frame.copy()
-    cv2.line(out, (saber.grip_x, saber.grip_y), (saber.tip_x, saber.tip_y), (0, 255, 0), 3)
+    line_color = color or (0, 255, 0)
+    if getattr(config, "SABER_PROFILE", "") == "redtoy":
+        line_color = color or (0, 0, 255)
+    cv2.line(out, (saber.grip_x, saber.grip_y), (saber.tip_x, saber.tip_y), line_color, 3)
     cv2.circle(out, (saber.grip_x, saber.grip_y), 6, (0, 200, 255), -1)
-    cv2.circle(out, (saber.tip_x, saber.tip_y), 6, (0, 255, 0), -1)
+    cv2.circle(out, (saber.tip_x, saber.tip_y), 6, line_color, -1)
     label = f"saber {saber.hand} {saber.orientation} {saber.angle_deg:.0f}deg"
+    profile = getattr(config, "SABER_PROFILE", "")
+    if profile:
+        label = f"{profile} {label}"
     cv2.putText(
         out,
         label,
         (saber.grip_x + 8, saber.grip_y - 8),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.55,
-        (0, 255, 0),
+        line_color,
         2,
     )
     return out

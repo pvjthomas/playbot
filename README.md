@@ -14,7 +14,9 @@ No camera? Set `USE_FAKE_ATTACKS = True` in `config.py`.
 
 ## Camera (MacBook vs Piper Dabai)
 
-The Piper kit uses a **Dabai DC1** USB camera. On **macOS**, OpenCV device indices do not
+The Piper kit uses a **Dabai DC1** USB camera (Orbbec). Hardware specs, Orbbec SDK links, and OrbbecViewer downloads: **[CAMERA.md](CAMERA.md)**.
+
+On **macOS**, OpenCV device indices do not
 reliably match the Piper camera when several devices are connected (built-in webcam,
 iPhone Continuity, etc.). We therefore support two capture backends:
 
@@ -65,12 +67,12 @@ uses ffmpeg (subprocess + pipe) to open `"Dabai DC1"` by name. Laptop uses direc
 Config (`config.py`): `CAMERA_SOURCE`, `CAMERA_BACKEND`, `PIPER_CAMERA_NAME`,
 `PIPER_OPENCV_INDEX`, `CAMERA_WIDTH`, `CAMERA_HEIGHT`. Flags override config for one run.
 
-Technical details: `camera.py` module docstring.
+Technical details: `camera.py` module docstring, **[CAMERA.md](CAMERA.md)** (Orbbec SDK / ROS / Python SDK links).
 
 ## Platforms (Mac vs Ubuntu)
 
 - **Vision + app:** macOS and Ubuntu both work (venv + `python main.py`).
-- **Live PiPER + CAN:** use **Ubuntu** next to the arm — Mac is not reliable for `can0`.
+- **Live PiPER + CAN:** **Ubuntu** (SocketCAN `can0`) is preferred; **macOS** works with candleLight on the host via **`gs_usb`** — see **[MAC-ROBOT.md](MAC-ROBOT.md)**.
 
 See **[PLATFORM.md](PLATFORM.md)** for the full matrix and optional Docker smoke test.
 
@@ -85,7 +87,7 @@ docker run --rm lightsaber
 
 | Developer | Branch | Task doc | Owns |
 |-----------|--------|----------|------|
-| **1 — Vision** | `feature/vision` | [task-vision.md](task-vision.md) | `camera.py`, `vision.py`, `overlays.py`, optional saber stack |
+| **1 — Vision** | `feature/vision` | [task-vision.md](task-vision.md) | `camera.py`, `vision.py`, `overlays.py`, optional `orbbec_*.py`, saber stack |
 | **2 — Robot** | `feature/robot` | [task-robot.md](task-robot.md) | `robot.py`, `poses.py`, `safety.py`, `movement_trainer.py` |
 | **3 — App** | `feature/demo` | [task-app.md](task-app.md) | `main.py`, `dashboard.py`, `sounds.py`, `README.md` |
 

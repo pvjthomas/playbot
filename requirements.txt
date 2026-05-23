@@ -1,8 +1,14 @@
 -r ../shared/requirements.txt
 
-# PiPER arm (CAN bus on Linux)
+# Optional Orbbec RGB-D SDK (depth / IR) — not required for default OpenCV/ffmpeg capture:
+#   pip install -r requirements-orbbec.txt
+
+# PiPER arm — Linux SocketCAN; macOS candleLight needs gs_usb extra (see MAC-ROBOT.md)
 piper_sdk>=0.6.0
 python-can>=3.3.4
+
+# Optional macOS robot path (after: brew install libusb):
+#   pip install "python-can[gs-usb]"
 
 # Developer 3 — sounds
 pygame>=2.5.0

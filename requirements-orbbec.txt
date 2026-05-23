@@ -1,0 +1,15 @@
+# Optional Orbbec SDK — depth / IR / vendor controls (Dabai DC1)
+#
+# Default vision uses OpenCV/ffmpeg only (requirements.txt). Install this file
+# when experimenting with RGB-D capture or orbbec_preview.py:
+#
+#   pip install -r requirements-orbbec.txt
+#
+# macOS Apple Silicon / universal Python 3.11:
+pyorbbecsdk>=1.3.2
+#
+# Linux at the arm (Ubuntu): prefer SDK v2 when available:
+#   pip install pyorbbecsdk2
+#   — or download a wheel from https://github.com/orbbec/pyorbbecsdk/releases
+#
+# Intel macOS (x86_64): wheels may not match — use Ubuntu VM or OpenCV capture.

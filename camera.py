@@ -57,7 +57,7 @@ Run flags (override config for one session)
     python camera.py --pick       # cycle cameras; y/n to find Piper OpenCV index
     python camera.py --pick-opencv   # OpenCV only (window shows faster on Mac)
 
-See also: README.md (Camera section), task-vision.md (Setup).
+See also: CAMERA.md (hardware + Orbbec SDK), README.md (Camera section), task-vision.md (Setup).
 """
 
 from __future__ import annotations
@@ -387,6 +387,16 @@ def add_camera_cli(parser) -> None:
         choices=("auto", "opencv", "ffmpeg"),
         help="Capture backend: auto (default), opencv (fast), ffmpeg (Mac Piper by name)",
     )
+    parser.add_argument(
+        "--orbbec-sdk",
+        action="store_true",
+        help="Use Orbbec pyorbbecsdk capture (RGB+depth) instead of OpenCV/ffmpeg",
+    )
+
+
+def configure_orbbec_from_args(args) -> None:
+    if getattr(args, "orbbec_sdk", False):
+        config.ENABLE_ORBBEC_SDK = True
 
 
 def configure_camera_from_args(args) -> None:
@@ -395,6 +405,20 @@ def configure_camera_from_args(args) -> None:
         camera=getattr(args, "camera", None),
         camera_backend=getattr(args, "camera_backend", None),
     )
+    configure_orbbec_from_args(args)
+
+
+def open_camera(index: int | str | None = None):
+    """
+    Factory: Orbbec SDK when ``ENABLE_ORBBEC_SDK`` else ``Camera``.
+
+    Orbbec path requires ``pip install -r requirements-orbbec.txt``.
+    """
+    if getattr(config, "ENABLE_ORBBEC_SDK", False):
+        from orbbec_camera import OrbbecCamera
+
+        return OrbbecCamera()
+    return Camera(index=index)
 
 
 class _FfmpegAvFoundationCamera:

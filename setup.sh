@@ -17,7 +17,16 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 
 echo ""
+echo "Optional Orbbec RGB-D SDK (depth / IR):"
+echo "  pip install -r requirements-orbbec.txt"
+echo "  python orbbec_preview.py"
 echo "Done. Activate with:"
 echo "  source .venv/bin/activate"
 echo "Then run:"
 echo "  python main.py"
+if [ "$(uname -s)" = "Darwin" ]; then
+  echo ""
+  echo "Mac robot (candleLight on Mac USB): see MAC-ROBOT.md"
+  echo "  brew install libusb && pip install \"python-can[gs-usb]\""
+  echo "  python robot_discover.py"
+fi

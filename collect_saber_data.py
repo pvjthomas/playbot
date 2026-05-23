@@ -4,7 +4,7 @@ Collect saber training images — hold prop in different orientations.
 Run:
   cd projects/lightsaber
   source .venv/bin/activate
-  python collect_saber_data.py --saber saber1
+  python collect_saber_data.py --saber redtoy --camera laptop
 
 Keys:
   h — save as horizontal
@@ -23,9 +23,10 @@ from pathlib import Path
 
 import cv2
 
-from camera import Camera
+from camera import add_camera_cli, configure_camera_from_args, open_camera
 from overlays import AttackOverlay
 from saber_detector import SaberDetector, draw_saber_overlay
+from saber_profiles import apply_saber_profile
 from vision import AttackVision
 
 DATASET_BASE = Path(__file__).resolve().parents[1] / "models" / "saber_dataset" / "raw"
@@ -35,23 +36,26 @@ KEY_TO_LABEL = {ord("h"): "horizontal", ord("v"): "vertical", ord("d"): "diagona
 
 def parse_args():
     p = argparse.ArgumentParser(description="Collect saber images for YOLO training")
+    add_camera_cli(p)
     p.add_argument(
         "--saber",
-        default="saber1",
-        help="Saber id for folder layout (default: saber1)",
+        default="redtoy",
+        help="Saber id for folder layout (default: redtoy)",
     )
     return p.parse_args()
 
 
 def main():
     args = parse_args()
+    configure_camera_from_args(args)
+    apply_saber_profile(args.saber)
     saber_id = args.saber.strip().replace("/", "_")
     dataset_root = DATASET_BASE / saber_id
 
     for label in LABELS:
         (dataset_root / label).mkdir(parents=True, exist_ok=True)
 
-    camera = Camera()
+    camera = open_camera()
     vision = AttackVision()
     saber_det = SaberDetector()
     overlay = AttackOverlay()

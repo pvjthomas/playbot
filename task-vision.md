@@ -2,7 +2,7 @@
 
 **Project:** this repo (`lightsaber`)  
 **Branch:** `feature/vision`  
-**Owns:** `camera.py`, `vision.py`, `overlays.py` (optional: `saber_detector.py`)
+**Owns:** `camera.py`, `vision.py`, `overlays.py`, optional Orbbec stubs (`orbbec_*.py`), optional `saber_detector.py`
 
 Do **not** import `robot`, `main`, or `dashboard`. Integrate only through `contracts.py` (`AttackDirection`, `AttackDetector`).
 
@@ -16,7 +16,15 @@ git checkout -b feature/vision    # first time only
 source .venv/bin/activate
 python vision.py                 # vision-only preview (your files)
 python main.py                   # full app integration test
-python -m unittest tests.test_vision
+python -m unittest tests.test_vision tests.test_orbbec
+```
+
+Optional Orbbec RGB-D (depth / IR):
+
+```bash
+pip install -r requirements-orbbec.txt
+python orbbec_preview.py
+python vision.py --orbbec-sdk --depth-hints
 ```
 
 ### Camera commands
@@ -49,10 +57,12 @@ python camera.py --pick-opencv   # recommended on Mac: OpenCV indices only, fast
 | `--camera laptop` | MacBook built-in webcam |
 | `--camera-backend ffmpeg` | Open Piper by device name (Mac default) |
 | `--camera-backend opencv` | Direct OpenCV (fast; needs `PIPER_OPENCV_INDEX` on Mac for Piper) |
+| `--orbbec-sdk` | Orbbec `pyorbbecsdk` capture (RGB+depth) instead of OpenCV/ffmpeg |
+| `--depth-hints` | Fuse depth cues in `vision.py` preview (use with `--orbbec-sdk`) |
 
 On **Ubuntu** at the arm, `--camera piper` uses `/dev/video*` and is fast like the laptop path.
 Config keys: `CAMERA_SOURCE`, `CAMERA_BACKEND`, `PIPER_CAMERA_NAME`, `CAMERA_WIDTH/HEIGHT`.
-More detail: README § Camera, `camera.py` docstring.
+More detail: **[CAMERA.md](CAMERA.md)** (hardware + Orbbec SDK links), README § Camera, `camera.py` docstring.
 
 ## Milestone 1 — Working detection (current sprint)
 
@@ -113,6 +123,18 @@ Valid returns: `"left"`, `"right"`, `"high"`, `"low"`, `"center"`, `"none"`
 ## Optional — Lightsaber object (grip → tip)
 
 **Not required for demo.** Current strikes use **body pose** (wrists), not the prop.
+
+**redtoy profile (Mac webcam):**
+
+```bash
+python saber_preview.py --saber redtoy --camera laptop
+python collect_saber_trainer.py --saber redtoy --camera laptop   # guided session (recommended)
+python collect_saber_data.py --saber redtoy --camera laptop      # free-form capture
+```
+
+Full YOLO pipeline: **[SABER-TRAINING.md](SABER-TRAINING.md)**
+
+Profiles: `saber_profiles.py` (`redtoy` = dual-range red HSV + longer blade ratio).
 
 **Goal:** Treat the saber as a **tubular object** attached to the hand, with a defined **grip** and **tip**, for overlay + finer aim.
 

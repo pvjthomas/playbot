@@ -18,7 +18,10 @@ python main.py          # DRY_RUN — robot prints intended moves
 python -m unittest tests.test_contracts
 ```
 
-Platform notes: **[PLATFORM.md](PLATFORM.md)** — live CAN on Ubuntu; Mac vision dev uses `DRY_RUN`.
+**VM step 1 (device, no motion):** `python robot_discover.py`  
+**VM smoke (software):** `python robot_smoke.py` — see **`projects/ubuntu_shared/VM-ROBOT-CHECKLIST.md`**.
+
+Platform notes: **[PLATFORM.md](PLATFORM.md)** — live CAN on Ubuntu; Mac vision dev uses `DRY_RUN`. **Mac robot (no VM USB):** [MAC-ROBOT.md](MAC-ROBOT.md). UTM share: **`/Users/fio/UbuntuShared`** (never move).
 
 ---
 
@@ -83,4 +86,4 @@ class PiperRobot:
 ## Coordination
 
 - New pose names → update **`contracts.py`** `RobotPose` + `ATTACK_TO_POSE` with team
-- Mac CAN often missing — plan for Linux machine for hardware milestone
+- Mac: use [MAC-ROBOT.md](MAC-ROBOT.md) (`gs_usb`) when VM cannot see USB; Linux VM still preferred for CAN

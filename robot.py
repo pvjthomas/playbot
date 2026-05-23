@@ -1,9 +1,17 @@
 """Developer 2 — PiPER robot controller (stub first)."""
 
+import time
+
 import config
+from can_platform import connect_piper_interface, resolve_can_profile
 from contracts import AttackDirection, RobotController, RobotPose, pose_for_attack
 from poses import get_pose
 from safety import SafetyGuard
+
+
+def _joints_to_sdk(joints_deg: tuple[float, ...]) -> tuple[int, int, int, int, int, int]:
+    """Piper SDK JointCtrl expects millidegrees (0.001°)."""
+    return tuple(int(round(d * 1000)) for d in joints_deg)
 
 
 class PiperRobot:
@@ -27,11 +35,12 @@ class PiperRobot:
         except ImportError as exc:
             raise ImportError("Install piper_sdk: pip install -r requirements.txt") from exc
 
-        self._piper = C_PiperInterface(config.CAN_INTERFACE)
+        profile = resolve_can_profile()
+        self._piper = connect_piper_interface(C_PiperInterface)
         self._piper.ConnectPort()
         self._piper.EnableArm(7)
         self._connected = True
-        print(f"[robot] Connected on {config.CAN_INTERFACE}")
+        print(f"[robot] Connected ({profile.label})")
         self.move_to_pose("HOME")
 
     def disconnect(self):
@@ -58,7 +67,15 @@ class PiperRobot:
         if not self.safety.hardware_enabled():
             return
 
-        # Wire piper_sdk joint commands here after team approval.
+        if self._piper is None:
+            print("[robot] LIVE skipped — not connected")
+            return
+
+        speed = config.ROBOT_MOVE_SPEED_PERCENT
+        self._piper.ModeCtrl(0x01, 0x01, speed, 0x00)
+        j1, j2, j3, j4, j5, j6 = _joints_to_sdk(pose.joints)
+        self._piper.JointCtrl(j1, j2, j3, j4, j5, j6)
+        time.sleep(0.05)
 
     def emergency_stop(self):
         self.safety.trigger_emergency_stop()
