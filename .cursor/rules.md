@@ -25,3 +25,19 @@
 
 - Touch only owned files unless updating `contracts.py` with team agreement
 - Keep `main` branch stable
+
+## Git — Philip (pvjthomas)
+
+Philip uses GitHub’s private noreply address for all commits in this repo (required while **Block command line pushes that expose my email** is on):
+
+- **Name:** `pvjthomas`
+- **Email:** `150876472+pvjthomas@users.noreply.github.com`
+
+Repo-local config (already set in `projects/lightsaber`):
+
+```bash
+git config user.name "pvjthomas"
+git config user.email "150876472+pvjthomas@users.noreply.github.com"
+```
+
+When creating commits for Philip, use this identity. Do not use personal Gmail in commit author/committer fields. If a push is rejected with GH007, amend with `--reset-author` using the noreply email above.
