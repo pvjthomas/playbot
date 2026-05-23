@@ -9,6 +9,13 @@ CAN_INTERFACE = "can0"
 CAMERA_INDEX = 0
 USE_FAKE_ATTACKS = False  # True = cycle fake directions (no MediaPipe needed)
 FAKE_ATTACK_CYCLE_SEC = 2.0
+
+# MediaPipe strike tuning (meanings documented in vision.py)
+HIGH_MARGIN = 0.06      # overhead → "high"
+SIDE_MARGIN = 0.12      # cross-body reach → "left" / "right"
+EXTENSION_MIN = 0.18    # min arm extension (filters "none")
+# "center" uses SIDE_MARGIN * 0.4 in vision.py — both wrists at midline
+
 ENABLE_YOLO = False
 YOLO_EVERY_N_FRAMES = 5
 YOLO_MODEL = "yolov8n.pt"

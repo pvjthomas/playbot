@@ -3,16 +3,24 @@
 import cv2
 import mediapipe as mp
 
-from contracts import AttackDirection, Frame, OverlayRenderer
+from contracts import AttackDirection, Frame
 
 _DRAW = mp.solutions.drawing_utils
 _DRAW_STYLE = mp.solutions.drawing_styles
 _CONNECTIONS = mp.solutions.pose.POSE_CONNECTIONS
 
+# BGR colors per attack direction
+DIRECTION_COLORS: dict[AttackDirection, tuple[int, int, int]] = {
+    "none": (160, 160, 160),
+    "left": (255, 120, 0),
+    "right": (0, 120, 255),
+    "high": (0, 255, 255),
+    "low": (255, 0, 180),
+    "center": (0, 255, 120),
+}
+
 
 class AttackOverlay:
-    """Implements OverlayRenderer."""
-
     def render(
         self,
         frame: Frame,
@@ -23,6 +31,7 @@ class AttackOverlay:
         robot_pose: str | None = None,
     ) -> Frame:
         out = frame.copy()
+        color = DIRECTION_COLORS.get(direction, (200, 200, 200))
 
         if pose is not None:
             _DRAW.draw_landmarks(
@@ -32,11 +41,7 @@ class AttackOverlay:
                 landmark_drawing_spec=_DRAW_STYLE.get_default_pose_landmarks_style(),
             )
 
-        if direction == "none":
-            label, color = "attack: none", (160, 160, 160)
-        else:
-            label, color = f"attack: {direction}", (0, 200, 255)
-
+        label = f"attack: {direction}"
         cv2.putText(out, label, (12, 32), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
 
         if fps is not None:

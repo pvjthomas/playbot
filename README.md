@@ -12,6 +12,20 @@ python main.py
 
 No camera? Set `USE_FAKE_ATTACKS = True` in `config.py`.
 
+## Platforms (Mac vs Ubuntu)
+
+- **Vision + app:** macOS and Ubuntu both work (venv + `python main.py`).
+- **Live PiPER + CAN:** use **Ubuntu** next to the arm — Mac is not reliable for `can0`.
+
+See **[PLATFORM.md](PLATFORM.md)** for the full matrix and optional Docker smoke test.
+
+```bash
+# Optional: Ubuntu container install check (from projects/)
+cd ..
+docker build -f lightsaber/Dockerfile -t lightsaber .
+docker run --rm lightsaber
+```
+
 ## Team ownership
 
 | Developer | Branch | Owns |
