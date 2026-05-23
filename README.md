@@ -83,13 +83,15 @@ docker run --rm lightsaber
 
 ## Team ownership
 
-| Developer | Branch | Owns |
-|-----------|--------|------|
-| **1 — Vision** | `feature/vision` | `camera.py`, `vision.py`, `overlays.py` — see **[task-vision.md](task-vision.md)** |
-| **2 — Robot** | `feature/robot` | `robot.py`, `poses.py`, `safety.py`, `movement_trainer.py` |
-| **3 — App** | `feature/demo` | `main.py`, `dashboard.py`, `sounds.py`, `README.md` |
+| Developer | Branch | Task doc | Owns |
+|-----------|--------|----------|------|
+| **1 — Vision** | `feature/vision` | [task-vision.md](task-vision.md) | `camera.py`, `vision.py`, `overlays.py`, optional saber stack |
+| **2 — Robot** | `feature/robot` | [task-robot.md](task-robot.md) | `robot.py`, `poses.py`, `safety.py`, `movement_trainer.py` |
+| **3 — App** | `feature/demo` | [task-app.md](task-app.md) | `main.py`, `dashboard.py`, `sounds.py`, `README.md` |
 
 **Shared (coordinate before editing):** `contracts.py`, `config.py`, `requirements.txt`
+
+> **Playset** (`projects/playset/`) is a separate vision-only experiment — not part of this repo’s sparring demo.
 
 ## Architecture rule
 
