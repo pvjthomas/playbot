@@ -4,6 +4,7 @@ import cv2
 import mediapipe as mp
 
 from contracts import AttackDirection, Frame
+from saber_detector import SaberLine, draw_saber_overlay
 
 _DRAW = mp.solutions.drawing_utils
 _DRAW_STYLE = mp.solutions.drawing_styles
@@ -67,3 +68,14 @@ class AttackOverlay:
             )
 
         return out
+
+    def render_with_saber(
+        self,
+        frame: Frame,
+        direction: AttackDirection,
+        saber: SaberLine | None,
+        **kwargs,
+    ) -> Frame:
+        """Attack overlay plus optional saber line."""
+        out = self.render(frame, direction, **kwargs)
+        return draw_saber_overlay(out, saber)

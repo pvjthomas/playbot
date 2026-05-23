@@ -7,16 +7,21 @@ Run:
     cd projects/lightsaber
     source .venv/bin/activate
     python main.py
+    python main.py --camera piper    # Piper on Mac (correct Dabai, auto → ffmpeg)
+    python main.py --camera laptop   # MacBook webcam (fast dev)
+
+    See README.md § Camera for full command list.
 
 Keys: q=quit  e=emergency stop  h=home
 """
 
+import argparse
 import time
 
 import cv2
 
 import config
-from camera import Camera
+from camera import Camera, add_camera_cli, configure_camera_from_args
 from contracts import AttackDirection
 from dashboard import ConsoleDashboard
 from overlays import AttackOverlay
@@ -27,6 +32,11 @@ from vision import AttackVision
 
 
 def main():
+    parser = argparse.ArgumentParser(description="AI Lightsaber Trainer")
+    add_camera_cli(parser)
+    args = parser.parse_args()
+    configure_camera_from_args(args)
+
     camera = Camera()
     vision = AttackVision()
     overlay = AttackOverlay()

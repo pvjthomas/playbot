@@ -12,6 +12,61 @@ python main.py
 
 No camera? Set `USE_FAKE_ATTACKS = True` in `config.py`.
 
+## Camera (MacBook vs Piper Dabai)
+
+The Piper kit uses a **Dabai DC1** USB camera. On **macOS**, OpenCV device indices do not
+reliably match the Piper camera when several devices are connected (built-in webcam,
+iPhone Continuity, etc.). We therefore support two capture backends:
+
+| Backend | Speed | Correct Piper on Mac? | When to use |
+|---------|-------|----------------------|-------------|
+| **opencv** | Fast (~30 fps) | Only if you set the right index manually | Laptop webcam; Piper on **Ubuntu** (`/dev/video*`) |
+| **ffmpeg** | Slower | Yes — opens `"Dabai DC1"` by name | **Piper on Mac** (recommended for demo) |
+| **auto** | — | Default: ffmpeg on Mac, opencv on Linux | Leave as default |
+
+**Why ffmpeg is slower on Mac:** capture goes through a subprocess and a raw-video pipe
+(Python → ffmpeg → AVFoundation → pipe → Python), plus pixel-format conversion. The laptop
+path is direct OpenCV → AVFoundation in one process.
+
+### Commands (copy & paste)
+
+From `projects/lightsaber` with venv active (`source .venv/bin/activate`):
+
+```bash
+# Piper on Mac (correct Dabai, auto → ffmpeg)
+python vision.py --camera piper
+python main.py --camera piper
+
+# Laptop webcam (fast dev)
+python vision.py --camera laptop
+
+# Force backend
+python vision.py --camera piper --camera-backend ffmpeg   # correct, slower (Mac default)
+python vision.py --camera piper --camera-backend opencv   # fast only if PIPER_OPENCV_INDEX is set
+
+# Diagnostics
+python camera.py --list
+python camera.py --preview
+python camera.py --pick
+python camera.py --pick-opencv   # recommended on Mac: skips slow ffmpeg entries first
+```
+
+| Backend | Speed | Piper on Mac? |
+|---------|-------|---------------|
+| **auto** → ffmpeg | Slower | Yes (default for `--camera piper`) |
+| **opencv** | Fast | Only if `PIPER_OPENCV_INDEX` is set in `config.py` |
+| **opencv** + `--camera laptop` | Fast | N/A — uses MacBook webcam |
+
+**Why Piper is slower on Mac:** OpenCV device indices do not match camera names, so Piper
+uses ffmpeg (subprocess + pipe) to open `"Dabai DC1"` by name. Laptop uses direct OpenCV.
+
+**Linux at the arm:** `--camera piper` uses OpenCV on `/dev/video*` (fast, no ffmpeg needed).
+
+Config (`config.py`): `CAMERA_SOURCE`, `CAMERA_BACKEND`, `PIPER_CAMERA_NAME`,
+`PIPER_OPENCV_INDEX`, `CAMERA_WIDTH`, `CAMERA_HEIGHT`. Flags override config for one run.
+
+Technical details: `camera.py` module docstring.
+
 ## Platforms (Mac vs Ubuntu)
 
 - **Vision + app:** macOS and Ubuntu both work (venv + `python main.py`).

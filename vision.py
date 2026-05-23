@@ -194,15 +194,22 @@ class AttackVision:
 
 def _run_vision_preview():
     """Vision-only loop — use while working on feature/vision branch."""
-    from camera import Camera
+    import argparse
+
+    from camera import Camera, add_camera_cli, configure_camera_from_args
     from overlays import AttackOverlay
+
+    parser = argparse.ArgumentParser(description="Vision preview (attack detection)")
+    add_camera_cli(parser)
+    args = parser.parse_args()
+    configure_camera_from_args(args)
 
     camera = Camera()
     detector = AttackVision()
     overlay = AttackOverlay()
     t_prev = time.monotonic()
 
-    print("Vision preview — mock slow strikes. Press 'q' to quit.")
+    print("Vision preview — attack detection. Press 'q' to quit.")
     try:
         while True:
             frame = camera.read_frame()
