@@ -27,7 +27,8 @@ ssh ubuntu-robot 'cd ~/piper-vision-hackathon/projects/lightsaber && source .ven
 |------|---------|----------------|
 | **1** | **`python robot_discover.py`** | USB-CAN seen, `can0` UP, CAN frames, PiPER joint feedback |
 | 2 | `python robot_smoke.py` | DRY_RUN prints HOME / BLOCK_* (software only) |
-| 3 | `python robot_smoke.py --connect` | LIVE SDK connect, no JointCtrl |
+| 2b | `python robot_smoke.py --preflight` | Firmware, CAN probe send, joint/status read (no motion) |
+| 3 | `python robot_smoke.py --connect` | Preflight, then LIVE enable + HOME |
 | 4 | `python robot_smoke.py --live --pose HOME --i-know` | Arm moves to HOME slowly |
 | 5 | Calibrate `poses.py`, then test BLOCK_LEFT | Safe, small motion |
 

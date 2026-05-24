@@ -4,8 +4,9 @@ Hardware smoke tests for PiPER (no camera). Linux VM or macOS host.
 
   python robot_smoke.py              # DRY_RUN pose sequence
   python robot_smoke.py --probe-can  # check can0 (Linux) or gs_usb (macOS)
-  python robot_smoke.py --connect    # live CAN connect only (no motion)
-  python robot_smoke.py --live --pose HOME  # LIVE move (requires --i-know)
+  python robot_smoke.py --preflight  # firmware + CAN send + state (no motion)
+  python robot_smoke.py --connect    # preflight, then LIVE enable + HOME
+  python robot_smoke.py --live --pose HOME --i-know  # preflight, then move
 
 macOS: see MAC-ROBOT.md (brew install libusb, pip install "python-can[gs-usb]").
 """
@@ -23,6 +24,7 @@ from contracts import RobotPose
 from movement_trainer import MovementTrainer
 from poses import JOINT_POSES
 from robot import PiperRobot
+from robot_preflight import run_preflight
 from safety import SafetyGuard
 
 
@@ -61,6 +63,12 @@ def _probe_can() -> int:
     return 0
 
 
+def _require_preflight() -> int:
+    if _probe_can() != 0:
+        return 1
+    return run_preflight()
+
+
 def _dry_run_sequence() -> int:
     safety = SafetyGuard(dry_run=True)
     robot = PiperRobot(safety=safety)
@@ -79,14 +87,14 @@ def _dry_run_sequence() -> int:
 
 
 def _live_connect_only() -> int:
-    if _probe_can() != 0:
+    if _require_preflight() != 0:
         return 1
     old = config.DRY_RUN
     config.DRY_RUN = False
     try:
         robot = PiperRobot(safety=SafetyGuard(dry_run=False))
         robot.connect()
-        print("[smoke] LIVE connect OK (no joint motion sent)")
+        print("[smoke] LIVE connect OK (EnableArm + HOME sent)")
         robot.disconnect()
         return 0
     except Exception as exc:
@@ -97,7 +105,7 @@ def _live_connect_only() -> int:
 
 
 def _live_pose(name: RobotPose) -> int:
-    if _probe_can() != 0:
+    if _require_preflight() != 0:
         return 1
     old = config.DRY_RUN
     config.DRY_RUN = False
@@ -121,8 +129,13 @@ def _live_pose(name: RobotPose) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description="PiPER robot smoke test (Linux VM or macOS)")
     parser.add_argument("--probe-can", action="store_true", help="Check can0 exists and is UP")
-    parser.add_argument("--connect", action="store_true", help="LIVE connect only (no JointCtrl)")
-    parser.add_argument("--live", action="store_true", help="LIVE joint motion")
+    parser.add_argument(
+        "--preflight",
+        action="store_true",
+        help="Firmware + CAN probe send + joint/status read (no motion)",
+    )
+    parser.add_argument("--connect", action="store_true", help="Preflight, then LIVE enable + HOME")
+    parser.add_argument("--live", action="store_true", help="Preflight, then LIVE joint motion")
     parser.add_argument("--pose", default="HOME", choices=list(JOINT_POSES.keys()))
     parser.add_argument(
         "--i-know",
@@ -133,6 +146,8 @@ def main() -> int:
 
     if args.probe_can:
         return _probe_can()
+    if args.preflight:
+        return _require_preflight()
     if args.connect:
         return _live_connect_only()
     if args.live:

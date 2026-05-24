@@ -328,7 +328,7 @@ def main() -> int:
 
     print()
     if ok:
-        print("PASS — robot path looks good. Next: python robot_smoke.py --connect")
+        print("PASS — robot path looks good. Next: python robot_smoke.py --preflight")
         return 0
 
     print("NOT READY — see fix hints above.")

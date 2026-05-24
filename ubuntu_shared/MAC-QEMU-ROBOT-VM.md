@@ -235,7 +235,8 @@ All from VM, `source .venv/bin/activate`:
 | Step | Command | What it proves |
 |------|---------|----------------|
 | Software only | `python robot_smoke.py` | DRY_RUN poses, no CAN |
-| Live connect | `python robot_smoke.py --connect` | SDK + enable + HOME |
+| Preflight | `python robot_smoke.py --preflight` | Firmware, CAN send probe, read state (no motion) |
+| Live connect | `python robot_smoke.py --connect` | Preflight, then SDK enable + HOME |
 | Live motion | `python robot_smoke.py --live --pose HOME --i-know` | Arm moves (clear workspace!) |
 | Block pose | `python robot_smoke.py --live --pose BLOCK_LEFT --i-know` | After calibrating `poses.py` |
 
