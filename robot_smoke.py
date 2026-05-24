@@ -51,7 +51,7 @@ def _probe_can() -> int:
         subprocess.run(["ip", "link", "show", config.CAN_INTERFACE], check=True)
     except subprocess.CalledProcessError:
         print(f"[probe] FAIL — no {config.CAN_INTERFACE}. Pass USB-CAN to VM in UTM, then:")
-        print("  bash projects/ubuntu_shared/can-up.sh")
+        print("  bash ubuntu_shared/can-up.sh")
         print("  Or run on Mac host: see MAC-ROBOT.md")
         return 1
     if not _can0_up():

@@ -43,11 +43,11 @@ Code: `can_platform.py` + `config.CAN_BUSTYPE` (`auto` → `gs_usb` on Darwin).
 
 ## Ubuntu (Developer 2 — robot)
 
-**VM:** UTM guest **`playbot-ubuntu-robot`** (Ubuntu 24.04 ARM64) — see **`projects/ubuntu_shared/ENVIRONMENT.md`** and [SSH-SETUP.md](../ubuntu_shared/SSH-SETUP.md). Mac share: **`/Users/fio/UbuntuShared`**.
+**VM (recommended for live CAN):** UTM **QEMU** Ubuntu — full guide **[ubuntu_shared/MAC-QEMU-ROBOT-VM.md](ubuntu_shared/MAC-QEMU-ROBOT-VM.md)**. Also [ENVIRONMENT.md](ubuntu_shared/ENVIRONMENT.md), [SSH-SETUP.md](ubuntu_shared/SSH-SETUP.md). Mac UTM share: **`/Users/fio/UbuntuShared`**.
 
 ```bash
-ssh philip@192.168.64.2
-# or: ssh ubuntu-robot   (after ~/.ssh/config setup)
+ssh philip@192.168.64.4   # example QEMU guest IP
+# or: ssh ubuntu-robot-qemu   (after ~/.ssh/config setup)
 ```
 
 **Good for:** `piper_sdk`, SocketCAN, `can0` at 1 Mbps.

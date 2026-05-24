@@ -19,7 +19,9 @@ python -m unittest tests.test_contracts
 ```
 
 **VM step 1 (device, no motion):** `python robot_discover.py`  
-**VM smoke (software):** `python robot_smoke.py` — see **`projects/ubuntu_shared/VM-ROBOT-CHECKLIST.md`**.
+**VM smoke (software):** `python robot_smoke.py` — see **[ubuntu_shared/VM-ROBOT-CHECKLIST.md](ubuntu_shared/VM-ROBOT-CHECKLIST.md)**.
+
+**VM setup (Mac host):** **[ubuntu_shared/MAC-QEMU-ROBOT-VM.md](ubuntu_shared/MAC-QEMU-ROBOT-VM.md)** — UTM QEMU, USB candleLight, `can0`, discover/smoke.
 
 Platform notes: **[PLATFORM.md](PLATFORM.md)** — live CAN on Ubuntu; Mac vision dev uses `DRY_RUN`. **Mac robot (no VM USB):** [MAC-ROBOT.md](MAC-ROBOT.md). UTM share: **`/Users/fio/UbuntuShared`** (never move).
 

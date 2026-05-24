@@ -2,7 +2,7 @@
 
 Use this when the **candleLight USB-CAN adapter** is plugged into the **Mac** and your UTM VM cannot see USB (Apple Virtualization). Vision + robot can both run on the Mac next to the arm.
 
-**Preferred for production:** Ubuntu VM or bare metal with SocketCAN (`can0`) — see [PLATFORM.md](PLATFORM.md) and [../ubuntu_shared/USB-PASSTHROUGH.md](../ubuntu_shared/USB-PASSTHROUGH.md).
+**Preferred for production:** Ubuntu VM or bare metal with SocketCAN (`can0`) — see [PLATFORM.md](PLATFORM.md) and [ubuntu_shared/USB-PASSTHROUGH.md](ubuntu_shared/USB-PASSTHROUGH.md).
 
 ---
 
@@ -18,7 +18,7 @@ Use this when the **candleLight USB-CAN adapter** is plugged into the **Mac** an
 
 **Important:** AgileX documents macOS with a **serial SLCAN** module (`/dev/ttyACM0`), not the kit **candleLight** (SocketCAN). See [piper_sdk #24](https://github.com/agilexrobotics/piper_sdk/issues/24). For candleLight, **Linux is the reliable path** (QEMU UTM VM with USB passthrough).
 
-**Preferred for production:** Ubuntu VM (QEMU) or bare metal with SocketCAN — see [USB-PASSTHROUGH.md](../ubuntu_shared/USB-PASSTHROUGH.md).
+**Preferred for production:** Ubuntu VM (QEMU) or bare metal with SocketCAN — see [USB-PASSTHROUGH.md](ubuntu_shared/USB-PASSTHROUGH.md).
 
 ---
 
@@ -97,7 +97,7 @@ Serial adapters (uncommon for this kit): `CAN_BUSTYPE = "slcan"`, `CAN_CHANNEL =
 
 | Symptom | Fix |
 |---------|-----|
-| `[OK] candleLight` then `[FAIL] gs_usb … Access denied` | **Known on Mac** — candleLight + libusb often blocked; use **QEMU Linux VM** ([USB-PASSTHROUGH.md](../ubuntu_shared/USB-PASSTHROUGH.md)) or AgileX **serial** CAN module |
+| `[OK] candleLight` then `[FAIL] gs_usb … Access denied` | **Known on Mac** — candleLight + libusb often blocked; use **QEMU Linux VM** ([USB-PASSTHROUGH.md](ubuntu_shared/USB-PASSTHROUGH.md)) or AgileX **serial** CAN module |
 | `No module named 'usb'` | `pip install "python-can[gs-usb]"` |
 | `Cannot import ... gs_usb` | `brew install libusb`, replug adapter |
 | UTM holding device | Quit UTM or detach USB from VM, replug to Mac |

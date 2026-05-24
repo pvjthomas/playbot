@@ -127,7 +127,7 @@ def check_usb_linux() -> bool:
         extra = (
             " (only UTM virtual USB — Apple Virtualization cannot pass host USB; "
             "use QEMU VM + USB sharing, or run robot on Mac — "
-            "projects/ubuntu_shared/USB-PASSTHROUGH.md, projects/lightsaber/MAC-ROBOT.md)"
+            "ubuntu_shared/USB-PASSTHROUGH.md, MAC-ROBOT.md)"
         )
     return _status(
         "USB-CAN adapter",
@@ -168,7 +168,7 @@ def check_can_interface_linux() -> bool:
         return _status(
             iface,
             False,
-            "exists but DOWN — run: bash projects/ubuntu_shared/can-up.sh",
+            "exists but DOWN — run: bash ubuntu_shared/can-up.sh",
         )
     return _status(iface, True, f"UP, bitrate {bitrate}")
 

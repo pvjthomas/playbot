@@ -72,9 +72,11 @@ Technical details: `camera.py` module docstring, **[CAMERA.md](CAMERA.md)** (Orb
 ## Platforms (Mac vs Ubuntu)
 
 - **Vision + app:** macOS and Ubuntu both work (venv + `python main.py`).
-- **Live PiPER + CAN:** **Ubuntu** (SocketCAN `can0`) is preferred; **macOS** works with candleLight on the host via **`gs_usb`** — see **[MAC-ROBOT.md](MAC-ROBOT.md)**.
+- **Live PiPER + CAN:** **Ubuntu VM** (SocketCAN `can0`) is preferred — **[ubuntu_shared/MAC-QEMU-ROBOT-VM.md](ubuntu_shared/MAC-QEMU-ROBOT-VM.md)** (UTM QEMU + USB passthrough). **macOS host** `gs_usb` is experimental — **[MAC-ROBOT.md](MAC-ROBOT.md)**.
 
 See **[PLATFORM.md](PLATFORM.md)** for the full matrix and optional Docker smoke test.
+
+**VM robot checklist:** [ubuntu_shared/VM-ROBOT-CHECKLIST.md](ubuntu_shared/VM-ROBOT-CHECKLIST.md) — `robot_discover.py` → `robot_smoke.py` on the guest.
 
 ```bash
 # Optional: Ubuntu container install check (from projects/)

@@ -26,7 +26,7 @@
 - **What it is:** The Mac folder bound to **UTM → VM Settings → Sharing** (shared directory with the Ubuntu guest `playbot-ubuntu-robot`). Files here are visible on both Mac and VM.
 - **Mac path:** **`/Users/fio/UbuntuShared`**
 - **Never move, rename, or delete this Mac path** — UTM’s share config targets this directory; changing it breaks Mac↔Linux sync
-- Setup docs (not the mount): `projects/ubuntu_shared/` in the monorepo
+- Setup docs (not the mount): `ubuntu_shared/` in this repo (monorepo may mirror at `projects/ubuntu_shared/`)
 - Do not merge the share into the `lightsaber/` git repo or relocate without explicit user approval
 
 ## PRs
