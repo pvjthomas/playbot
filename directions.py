@@ -34,22 +34,23 @@ Raise your **anatomical RIGHT hand** — if it appears on the **right side of th
 screen**, the camera is **mirror/selfie** mode. If it appears on the **left side**,
 it's a **true** (non-mirrored) view. Stored in ``camera_mirror.json``.
 
-Attack labels always use **image left/right** (edges of the picture). Mirror setting
-only affects how you interpret posing instructions — see ``image_direction_cheat_sheet()``
+Attack labels use **body cross-body direction** (YOUR left/right), aligned with swing
+eval prompts and robot blocks — not raw “toward the left edge of the JPEG.” Mirror
+setting still matters for how you interpret the preview; see ``image_direction_cheat_sheet()``
 in ``camera_mirror.py``.
 
 Motion vs single frame (IMPORTANT)
 -----------------------------------
-A strike is a **sequence** (e.g. image-left → image-right, overhead → down, chest → thrust).
+A strike is a **sequence** (e.g. your right → your left, overhead → down, chest → thrust).
 This project standardizes on one moment for attack naming:
 
 **Label the END of the strike — committed peak extension — not wind-up or mid-swing.**
 
 +---------------+----------------------------------------------------------+
-| Motion        | What we label (END pose in the image)                      |
+| Motion        | What we label (END pose — body side)                       |
 +---------------+----------------------------------------------------------+
-| Side swipe    | Saber/arm **fully extended** toward **image-left** or    |
-| L↔R           | **image-right** (where the blow finishes)                |
+| Side swipe    | Arm/saber **fully extended** on **YOUR LEFT** or         |
+| L↔R           | **YOUR RIGHT** (where the blow finishes on your body)    |
 +---------------+----------------------------------------------------------+
 | Overhead chop | **Above shoulders**, top of arc before chop down              |
 +---------------+----------------------------------------------------------+
@@ -129,32 +130,37 @@ Intended use (team agreement still needed):
 
 Attack labels (``AttackDirection`` in ``contracts.py``)
 -------------------------------------------------------
-Names describe **where the strike finishes in the image** (END pose), NOT the partner's
-anatomical left/right and NOT the robot's joint left/right.
+Names describe **body-relative cross-body strikes** (partner facing the camera),
+aligned with swing eval prompts and robot blocks. **Not** raw screen-edge compass
+unless you explicitly use photo-training prompts.
 
 +----------+------------------------------------------------+---------------------------+
-| Label    | END pose in the image (committed extension)    | Robot pose (blocks)       |
+| Label    | Meaning (partner facing camera)                | Robot pose (blocks)       |
 +----------+------------------------------------------------+---------------------------+
-| ``left`` | Strike **finishes** toward the **LEFT side** of  | ``BLOCK_LEFT``            |
-|          | the image (viewer's left edge).                  |                           |
-|          | Typical: partner's **right** arm extended across.|                           |
+| ``left`` | Cross-body to **YOUR LEFT** — right arm;       | ``BLOCK_LEFT``            |
+|          | travel **your right → your left**; finish on   |                           |
+|          | your left (true cam: toward **image-right**).  |                           |
 +----------+------------------------------------------------+---------------------------+
-| ``right``| Strike **finishes** toward the **RIGHT side**.   | ``BLOCK_RIGHT``           |
-|          | Typical: partner's **left** arm extended across. |                           |
+| ``right``| Cross-body to **YOUR RIGHT** — left arm;       | ``BLOCK_RIGHT``           |
+|          | travel **your left → your right**; finish on   |                           |
+|          | your right (true cam: toward **image-left**).  |                           |
 +----------+------------------------------------------------+---------------------------+
 | ``high`` | **Above shoulders** — top of overhead arc / chop | ``BLOCK_HIGH``            |
-|          | (not the downward travel itself).                |                           |
 +----------+------------------------------------------------+---------------------------+
 | ``center``| **Fully thrust** at the **camera** (midline).   | ``GUARD_CENTER``          |
-|          | Arms extended forward — not retracted at chest.   |                           |
 +----------+------------------------------------------------+---------------------------+
-| ``low``  | Low line toward waist (planned, not live yet). | ``BLOCK_LOW``             |
+| ``low``  | Low line toward waist (planned).               | ``BLOCK_LOW``             |
 +----------+------------------------------------------------+---------------------------+
 | ``none`` | No attack / at rest.                           | (no move)                 |
 +----------+------------------------------------------------+---------------------------+
 
-**Rule of thumb:** ``left`` = saber finishes toward the **left edge** of the photo;
-``right`` = finishes toward the **right edge**. Not “which way you were moving.”
+**Temporal motion (``begin``/``mid``):** horizontal velocity uses the same body
+semantics — ``left`` = dominant travel toward **your left** (+image-x on a true
+camera facing you).
+
+**END pose (``end`` / ``detect_attack``):** committed extension on **your left**
+(right arm across) or **your right** (left arm across), not “saber toward the
+left edge of the JPEG.”
 
 Saber YOLO training folders (NOT attack labels)
 -----------------------------------------------
@@ -211,14 +217,14 @@ class DirectionSpec(TypedDict):
 ATTACK_SPECS: dict[str, DirectionSpec] = {
     "left": {
         "label": "left",
-        "image_meaning": "END pose: saber extended toward the LEFT side of the image",
-        "partner_typical": "Partner's right arm crosses body, fully extended image-left",
+        "image_meaning": "Cross-body to YOUR LEFT — right arm; finish on your left side",
+        "partner_typical": "Right arm crosses body; travel your right → your left",
         "robot_pose": "BLOCK_LEFT",
     },
     "right": {
         "label": "right",
-        "image_meaning": "END pose: saber extended toward the RIGHT side of the image",
-        "partner_typical": "Partner's left arm crosses body, fully extended image-right",
+        "image_meaning": "Cross-body to YOUR RIGHT — left arm; finish on your right side",
+        "partner_typical": "Left arm crosses body; travel your left → your right",
         "robot_pose": "BLOCK_RIGHT",
     },
     "high": {
@@ -249,17 +255,16 @@ ATTACK_SPECS: dict[str, DirectionSpec] = {
 
 
 def training_prompt_for_attack(attack: str) -> str:
-    """Short prompt for guided photo session — END pose, image-frame wording."""
+    """Short prompt for guided photo session — END pose, body strike wording."""
     hold = "HOLD this END pose for the whole capture window (not wind-up)."
     prompts = {
         "left": (
-            "Attack LEFT — swing toward IMAGE LEFT, then HOLD the END: saber fully "
-            "extended toward the LEFT edge of the screen. "
-            f"{hold} NOT your body's left/right."
+            "Attack LEFT — RIGHT arm crosses body to YOUR LEFT; swing right → left, "
+            f"then HOLD fully extended on YOUR LEFT. {hold}"
         ),
         "right": (
-            "Attack RIGHT — swing toward IMAGE RIGHT, then HOLD the END: saber fully "
-            f"extended toward the RIGHT edge of the screen. {hold}"
+            "Attack RIGHT — LEFT arm crosses body to YOUR RIGHT; swing left → right, "
+            f"then HOLD fully extended on YOUR RIGHT. {hold}"
         ),
         "high": (
             "Attack HIGH — raise saber above your head to the TOP of the chop, then "
@@ -273,13 +278,143 @@ def training_prompt_for_attack(attack: str) -> str:
     return prompts.get(attack, ATTACK_SPECS.get(attack, {}).get("image_meaning", attack))
 
 
+# Body-based prompts for live training / swing eval (mirror-independent).
+SWING_RECOVERY_HINT = (
+    "After each finish: pull the saber back — tuck elbow, rotate grip so the blade "
+    "passes behind your shoulder or rests low at your hip (out of the camera's view). "
+    "Pause there before the next swing so detection returns to idle."
+)
+
+
+def body_expect_label(attack: str) -> str:
+    """One-line HUD label — anatomical, not image left/right."""
+    labels = {
+        "left": "RIGHT arm → finish on YOUR LEFT",
+        "right": "LEFT arm → finish on YOUR RIGHT",
+        "high": "Raise over head → chop DOWN",
+        "center": "Both hands → thrust FORWARD (chest out)",
+        "none": "Rest — saber behind back or at hip",
+    }
+    return labels.get(attack, attack)
+
+
+def body_prompt_for_attack(attack: str) -> str:
+    """Guided swing prompt using your body, not screen edges."""
+    recovery = SWING_RECOVERY_HINT
+    prompts = {
+        "left": (
+            "LEFT strike — use your RIGHT arm. Start on your right side, swing across "
+            "your chest, and FINISH fully extended on YOUR LEFT. "
+            f"{recovery}"
+        ),
+        "right": (
+            "RIGHT strike — use your LEFT arm. Start on your left side, swing across "
+            "your chest, and FINISH fully extended on YOUR RIGHT. "
+            f"{recovery}"
+        ),
+        "high": (
+            "HIGH strike — raise hands/saber over your head, then CHOP DOWN through "
+            "the arc (raise → peak → downward strike). "
+            f"{recovery}"
+        ),
+        "center": (
+            "CENTER thrust — both hands at chest, push straight out to full extension "
+            f"toward the camera, FINISH extended. {recovery}"
+        ),
+    }
+    return prompts.get(attack, ATTACK_SPECS.get(attack, {}).get("image_meaning", attack))
+
+
+CENTERLINE_GET_READY = (
+    "GET READY at CENTERLINE — hold the blocked pose: saber stopped at midline as if "
+    "the robot just blocked your cross-body strike. Arms extended at center. Hold still."
+)
+
+CENTERLINE_REST_READY = (
+    "Get into START position — saber behind your back, low at your hip, or tucked "
+    "out of view. Arms relaxed. Hold still until the countdown ends."
+)
+
+
+def body_prompt_centerline_strike(direction: str) -> str:
+    arm = "RIGHT" if direction == "left" else "LEFT"
+    return (
+        f"{direction.upper()} strike — {arm} arm swings across your body but STOP at "
+        "the midline (robot blocks you there). HOLD the blocked pose at center during "
+        "the recording window. Do ONE strike when recording starts."
+    )
+
+
+def body_prompt_withdraw(withdraw_direction: str, *, after_strike: str) -> str:
+    strike = after_strike.upper()
+    wd = withdraw_direction.upper()
+    return (
+        f"WITHDRAW toward YOUR {wd} — start from centerline (blocked after {strike} "
+        f"strike). Pull saber back across your body toward YOUR {wd} during the 3s "
+        "window. One smooth retreat."
+    )
+
+
+def body_expect_centerline_strike(direction: str) -> str:
+    return f"{direction.upper()} strike → STOP at centerline"
+
+
+def body_expect_withdraw(direction: str, *, after_strike: str) -> str:
+    return f"Withdraw YOUR {direction.upper()} (after {after_strike} block)"
+
+
+def print_body_direction_legend() -> None:
+    """Print at start of swing eval / body-guided sessions."""
+    print("\n=== Swing directions (YOUR body) ===")
+    print("  LEFT  = RIGHT arm: travel YOUR RIGHT → YOUR LEFT, finish on YOUR LEFT")
+    print("  RIGHT = LEFT arm:  travel YOUR LEFT → YOUR RIGHT, finish on YOUR RIGHT")
+    print("  HIGH  = raise over head, chop downward (full arc)")
+    print("  CENTER = straight thrust forward from chest")
+    print("  Between reps: retract saber behind shoulder/back or low at hip.")
+    print("===================================\n")
+
+
+def print_centerline_eval_legend() -> None:
+    """Print at start of --centerline eval sessions."""
+    print("\n=== Centerline eval (robot blocks at midline) ===")
+    print("  Strike LEFT  → stop at centerline → withdraw RIGHT")
+    print("  Strike RIGHT → stop at centerline → withdraw LEFT")
+    print("  Each pair: strike trial, then withdraw trial (SPACE between trials).")
+    print("================================================\n")
+
+
+def strike_from_image_dx(dx: float, min_mag: float) -> AttackDirection:
+    """
+    Map horizontal image delta → body-named side strike.
+
+    Partner facing camera (true cam): +dx = toward your left = ``left`` strike.
+    """
+    if dx >= min_mag:
+        return "left"
+    if dx <= -min_mag:
+        return "right"
+    return "none"
+
+
+def side_end_pose_from_x(
+    x: float, center_x: float, margin: float, *, extended: bool
+) -> AttackDirection:
+    """END extension on your left (high x) or your right (low x)."""
+    if not extended:
+        return "none"
+    if x > center_x + margin:
+        return "left"
+    if x < center_x - margin:
+        return "right"
+    return "none"
+
+
 def print_direction_legend() -> None:
     """Print once at start of guided training session."""
     print("\n=== Direction legend (read carefully) ===")
-    print("Strike names = where the saber FINISHES in the PHOTO (END pose / peak extension).")
+    print("Strike names = body cross-body direction + END pose (peak extension).")
     print("  NOT wind-up. NOT mid-swing. HOLD the end pose during auto-capture.")
-    print("  left  = extended toward LEFT side of image  (→ robot BLOCK_LEFT)")
-    print("  right = extended toward RIGHT side of image (→ robot BLOCK_RIGHT)")
-    print("  NOT your anatomical left/right. NOT the robot arm's physical left.")
+    print("  left  = YOUR RIGHT → YOUR LEFT  (→ robot BLOCK_LEFT)")
+    print("  right = YOUR LEFT → YOUR RIGHT (→ robot BLOCK_RIGHT)")
     print("YOLO folders (horizontal/vertical/diagonal) = static blade angle, not attacks.")
     print("==========================================\n")

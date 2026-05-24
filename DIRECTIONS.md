@@ -33,8 +33,8 @@ python camera_calibrate_mirror.py --camera laptop
 Raise your **anatomical RIGHT hand** — if it appears on the **right side of the screen**,
 the camera is mirror/selfie mode.
 
-**Attack labels always use image left/right** (edges of the picture), not anatomical
-left/right.
+**Attack labels use body cross-body direction** (YOUR left/right), aligned with swing eval
+prompts — not “toward the left edge of the JPEG.”
 
 ---
 
@@ -44,9 +44,9 @@ A strike is a **sequence**. For **labeling stills** and today's `detect_attack()
 
 **Label the END of the strike — committed peak extension — not wind-up or mid-swing.**
 
-| Motion | What we label (END pose in the image) |
+| Motion | What we label (END pose — body side) |
 |--------|----------------------------------------|
-| Side swipe L↔R | Arm/saber **fully extended** toward **image-left** or **image-right** |
+| Side swipe L↔R | Arm/saber **fully extended** on **YOUR LEFT** or **YOUR RIGHT** |
 | Overhead chop | **Above shoulders** — top of arc |
 | Thrust | **Fully extended** toward camera at midline (not retracted at chest) |
 
@@ -80,7 +80,7 @@ a lightsaber** (MediaPipe wrists; optional YOLO fusion).
 
 ### Detection (conceptual)
 
-- **Linear** — wrist/saber velocity over N frames; direction from dominant axis; phase from speed + extension.
+- **Linear** — wrist/saber velocity over N frames; direction from dominant axis (**+image-x = travel toward YOUR LEFT** on a true camera facing you); phase from speed + extension.
 - **Thrust** — midline hands + increasing extension / bbox scale / optional depth.
 - **Without saber** — wrist midpoint or both wrists; thrust = two-hand chest-to-forward motion.
 
@@ -90,20 +90,20 @@ Full vision checklist: **task-vision.md** Milestone 2.
 
 ## Attack labels (`AttackDirection`)
 
-Names describe **where the strike finishes in the image** (END pose), NOT anatomical
-left/right and NOT the robot joint names.
+Names describe **body-relative cross-body strikes** (partner facing the camera),
+aligned with swing eval prompts and robot blocks.
 
-| Label | END pose in the image | Robot pose |
-|-------|----------------------|------------|
-| `left` | Finishes toward **LEFT edge** of image (typical: partner's right arm crosses) | `BLOCK_LEFT` |
-| `right` | Finishes toward **RIGHT edge** of image (typical: partner's left arm crosses) | `BLOCK_RIGHT` |
+| Label | Meaning (partner facing camera) | Robot pose |
+|-------|--------------------------------|------------|
+| `left` | Cross-body to **YOUR LEFT** — right arm; travel **your right → your left**; finish on your left (true cam: toward **image-right**) | `BLOCK_LEFT` |
+| `right` | Cross-body to **YOUR RIGHT** — left arm; travel **your left → your right**; finish on your right (true cam: toward **image-left**) | `BLOCK_RIGHT` |
 | `high` | **Above shoulders** — top of overhead arc | `BLOCK_HIGH` |
 | `center` | **Fully thrust** at camera midline | `GUARD_CENTER` |
 | `low` | Low line toward waist (planned, not live) | `BLOCK_LOW` |
 | `none` | No attack / at rest | (no move) |
 
-**Rule of thumb:** `left` = finishes toward the **left edge** of the photo; `right` = **right edge**.
-Not “which way you were moving.”
+**Rule of thumb:** `left` = swing **your right → your left** and finish on **YOUR LEFT**;
+`right` = the mirror cross-body the other way.
 
 ---
 
@@ -120,7 +120,7 @@ Photo collection uses **blade shape**, not attack direction:
 
 YOLO class is always **`lightsaber`** (bbox around the prop only).
 
-Strike poses in `saber_training_plan.py` (e.g. `strike_left`) use END-pose wording and
+Strike poses in `saber_training_plan.py` (e.g. `strike_left`) use body END-pose wording and
 match `AttackDirection` semantics; the **folder** is still `diagonal`, etc.
 
 ---
@@ -139,8 +139,8 @@ Runtime notes: **task-vision.md** § *Tip in frame vs tip out of frame*.
 
 Hold wording for guided capture (`training_prompt_for_attack()` in code):
 
-- **left** — Swing toward IMAGE LEFT, then HOLD full extension toward the **left edge** of the screen.
-- **right** — Swing toward IMAGE RIGHT, then HOLD toward the **right edge**.
+- **left** — RIGHT arm crosses to YOUR LEFT; swing right → left, then HOLD fully extended on YOUR LEFT.
+- **right** — LEFT arm crosses to YOUR RIGHT; swing left → right, then HOLD fully extended on YOUR RIGHT.
 - **high** — Raise saber above head to TOP of chop; HOLD overhead (above shoulders).
 - **center** — Thrust from chest to full extension at camera; HOLD midline END.
 

@@ -11,12 +11,15 @@ from typing import Any, Literal, Protocol, runtime_checkable
 
 # --- Shared types ---
 #
-# Attack direction semantics (image frame, not body left/right): see directions.py
+# Body cross-body strike semantics: directions.py
+# Robot response (centerline block, withdraw hold): task-robot.md
 
 AttackDirection = Literal["left", "right", "high", "low", "center", "none"]
 
 SwingPhase = Literal["idle", "begin", "mid", "end"]
 MotionKind = Literal["none", "linear", "thrust"]
+# Proposed — see task-robot.md (strike vs post-block withdraw)
+MotionIntent = Literal["none", "strike", "withdraw"]
 
 
 @dataclass(frozen=True)
@@ -24,6 +27,9 @@ class SwingState:
     direction: AttackDirection
     phase: SwingPhase
     kind: MotionKind
+    speed: float = 0.0
+    vx: float = 0.0
+    vy: float = 0.0
 
 RobotPose = Literal[
     "HOME",
@@ -40,6 +46,9 @@ RobotPose = Literal[
 Frame = Any  # OpenCV BGR numpy array
 
 # --- Attack → pose mapping (owned by contracts; tune with team agreement) ---
+#
+# Centerline sparring (default): side strikes → GUARD_CENTER at midline (task-robot.md).
+# Full-extension drills may use BLOCK_LEFT / BLOCK_RIGHT instead.
 
 ATTACK_TO_POSE: dict[AttackDirection, RobotPose | None] = {
     "left": "BLOCK_LEFT",

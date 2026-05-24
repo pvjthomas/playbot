@@ -5,7 +5,7 @@ Run (MacBook webcam + red toy saber):
   cd projects/lightsaber
   source .venv/bin/activate
   python saber_preview.py --saber redtoy --camera laptop
-  python saber_preview.py --saber redtoy --detector color --camera laptop
+  python saber_preview.py --saber redtoy --detector yolo --camera laptop --saber-axis all
 
 Keys:
   q — quit
@@ -23,6 +23,7 @@ import config
 from camera import add_camera_cli, configure_camera_from_args, open_camera
 from color_saber_detector import ColorSaberDetector, calibration_path
 from overlays import AttackOverlay
+from saber_axis_flags import apply_axis_preset, list_axis_presets
 from saber_detector import SaberDetector, draw_saber_overlay
 from saber_profiles import apply_saber_profile, list_profiles
 from vision import AttackVision
@@ -38,9 +39,15 @@ def parse_args():
     )
     parser.add_argument(
         "--detector",
-        choices=("legacy", "color"),
+        choices=("legacy", "yolo", "color"),
         default="legacy",
-        help="legacy = forearm/YOLO stub; color = calibrated HSV (fast, no YOLO weights)",
+        help="legacy/yolo = saber_detector; color = calibrated HSV",
+    )
+    parser.add_argument(
+        "--saber-axis",
+        default="1_color_roi",
+        metavar="PRESET",
+        help="Axis todos: " + ", ".join(list_axis_presets()) + " — SABER-AXIS-TODO.md",
     )
     return parser.parse_args()
 
@@ -51,6 +58,7 @@ def main():
     if args.camera is None:
         config.CAMERA_SOURCE = "laptop"
     profile = apply_saber_profile(args.saber)
+    enabled = apply_axis_preset(args.saber_axis)
 
     camera = open_camera()
     vision = AttackVision()
@@ -69,7 +77,12 @@ def main():
     t_prev = time.monotonic()
     show_mask = False
 
-    print(f"Saber preview — profile={profile!r}, detector={args.detector}, camera={config.CAMERA_SOURCE!r}")
+    print(
+        f"Saber preview — profile={profile!r}, detector={args.detector}, "
+        f"axis={args.saber_axis!r}, camera={config.CAMERA_SOURCE!r}"
+    )
+    if enabled:
+        print(f"  axis flags: {', '.join(enabled)}")
     print("Keys: q=quit  m=toggle color mask debug")
 
     try:

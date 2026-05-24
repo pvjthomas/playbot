@@ -25,3 +25,4 @@ weights/
 *.log
 .mypy_cache/
 .pytest_cache/
+swing_eval_logs/

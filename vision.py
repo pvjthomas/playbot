@@ -17,11 +17,11 @@ Timing — END pose (not motion path):
 
   none   — No attack. Arms relaxed at sides, or pose not tracked.
 
-  left   — END toward the LEFT side of the image (right arm extended past center).
-           Detection: right wrist past body center, extended.
+  left   — Cross-body to YOUR LEFT (right arm). Travel your right → your left;
+           END: right wrist extended on your left side (true cam: high image-x).
 
-  right  — END toward the RIGHT side of the image (left arm extended past center).
-           Detection: left wrist past body center, extended.
+  right  — Cross-body to YOUR RIGHT (left arm). Travel your left → your right;
+           END: left wrist extended on your right side (true cam: low image-x).
 
   high   — END of overhead arc — wrist above shoulders (top of chop, not travel).
            Detection: wrist y above shoulder line.
@@ -43,8 +43,8 @@ Run vision-only preview:
 # Quick reference for overlays / logs (same meanings as module doc above)
 ATTACK_MEANINGS: dict[str, str] = {
     "none": "no attack — arms down or untracked",
-    "left": "cross-body strike from partner's right arm → image left",
-    "right": "cross-body strike from partner's left arm → image right",
+    "left": "cross-body to YOUR LEFT — right arm, finish on your left side",
+    "right": "cross-body to YOUR RIGHT — left arm, finish on your right side",
     "high": "overhead — wrist above shoulders",
     "center": "straight thrust — both hands extended at body center",
     "low": "(not implemented) low line strike toward waist",
@@ -58,7 +58,13 @@ import mediapipe as mp
 
 import config
 from contracts import AttackDirection, Frame, SwingState
-from swing_tracker import SwingTracker, sample_from_landmarks
+from swing_tracker import (
+    SwingTracker,
+    build_motion_sample,
+    sample_from_landmarks,
+    saber_tip_direction,
+    side_strike_blocked_at_center,
+)
 
 _NOSE = 0
 _LEFT_SHOULDER = 11
@@ -101,6 +107,9 @@ class AttackVision:
         self._swing_tracker = SwingTracker()
         self._last_swing = SwingState(direction="none", phase="idle", kind="none")
         self._fake_swing_phase = 0
+        self._process_cache_t = 0.0
+        self._last_saber_line = None
+        self._last_fused_saber = False
 
         if not config.USE_FAKE_ATTACKS:
             self._pose = mp.solutions.pose.Pose(
@@ -117,7 +126,7 @@ class AttackVision:
             self._last_swing = self._fake_swing()
             return self._last_direction
 
-        direction = self._mediapipe_attack(frame)
+        direction, _ = self.process_frame(frame)
         self._last_direction = direction
         return direction
 
@@ -127,23 +136,95 @@ class AttackVision:
             self._last_swing = self._fake_swing()
             return self._last_swing
 
+        _, swing = self.process_frame(frame)
+        return swing
+
+    def process_frame(
+        self,
+        frame: Frame,
+        *,
+        saber_line=None,
+        fuse_saber: bool = False,
+        saber_detect_fn=None,
+    ) -> tuple[AttackDirection, SwingState]:
+        """MediaPipe + optional YOLO saber fusion → attack + swing."""
+        now = time.monotonic()
+        using_saber = fuse_saber and (
+            saber_line is not None or saber_detect_fn is not None
+        )
+        if (
+            not using_saber
+            and (now - self._process_cache_t) < 0.02
+            and self._last_landmarks is not None
+        ):
+            return self._last_direction, self._last_swing
+        self._process_cache_t = now
+
         if self._pose is None or frame is None:
-            self._last_swing = self._swing_tracker.update(None)
-            return self._last_swing
+            self._last_landmarks = None
+            self._last_saber_line = None
+            self._last_fused_saber = False
+            swing = self._swing_tracker.update(None)
+            self._last_swing = swing
+            self._last_direction = "none"
+            return "none", swing
 
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         result = self._pose.process(rgb)
         self._last_landmarks = result.pose_landmarks
 
         if not result.pose_landmarks:
-            self._last_swing = self._swing_tracker.update(None)
-            return self._last_swing
+            self._last_saber_line = None
+            self._last_fused_saber = False
+            swing = self._swing_tracker.update(None)
+            self._last_swing = swing
+            self._last_direction = "none"
+            return "none", swing
 
-        sample = sample_from_landmarks(
-            result.pose_landmarks.landmark, time.monotonic()
-        )
-        self._last_swing = self._swing_tracker.update(sample)
-        return self._last_swing
+        h, w = frame.shape[:2]
+        static = self._classify(result.pose_landmarks.landmark)
+
+        detected_saber = saber_line
+        if fuse_saber and detected_saber is None and saber_detect_fn is not None:
+            detected_saber = saber_detect_fn(frame, result.pose_landmarks)
+
+        if fuse_saber and detected_saber is not None:
+            sample = build_motion_sample(
+                result.pose_landmarks.landmark,
+                now,
+                detected_saber,
+                w,
+                h,
+                fuse_saber=True,
+            )
+            self._last_saber_line = detected_saber
+            self._last_fused_saber = bool(sample and sample.uses_saber)
+        else:
+            sample = sample_from_landmarks(result.pose_landmarks.landmark, now)
+            self._last_saber_line = detected_saber if detected_saber is not None else None
+            self._last_fused_saber = False
+
+        swing = self._swing_tracker.update(sample)
+        direction = static
+        if sample is not None and sample.uses_saber:
+            saber_dir = swing.direction if swing.direction != "none" else None
+            if saber_dir is None and swing.phase in ("mid", "end"):
+                saber_dir = saber_tip_direction(sample)
+            if direction == "none" and saber_dir:
+                direction = saber_dir
+        if (
+            direction == "none"
+            and swing.phase != "idle"
+            and swing.direction != "none"
+        ):
+            direction = swing.direction
+        self._last_swing = swing
+        self._last_direction = direction
+        return direction, swing
+
+    def _process_pose(self, frame: Frame) -> tuple[AttackDirection, SwingState]:
+        """Backward-compatible alias."""
+        return self.process_frame(frame)
 
     @property
     def last_swing(self) -> SwingState:
@@ -153,6 +234,17 @@ class AttackVision:
         """Clear temporal history between eval trials or swings."""
         self._swing_tracker.reset()
         self._last_swing = SwingState(direction="none", phase="idle", kind="none")
+        self._process_cache_t = 0.0
+        self._last_saber_line = None
+        self._last_fused_saber = False
+
+    @property
+    def last_saber_line(self):
+        return self._last_saber_line
+
+    @property
+    def last_fused_saber(self) -> bool:
+        return self._last_fused_saber
 
     @property
     def last_direction(self) -> AttackDirection:
@@ -213,12 +305,19 @@ class AttackVision:
         if lw.y < shoulder_y - self.high_margin or rw.y < shoulder_y - self.high_margin:
             return "high"
 
-        # left — partner's right arm crosses to image-left
-        if rw.x < center_x - self.side_margin and right_reach >= self.extension_min:
+        pose_sample = sample_from_landmarks(landmarks, 0.0)
+        if pose_sample is not None:
+            if side_strike_blocked_at_center(pose_sample, "left"):
+                return "left"
+            if side_strike_blocked_at_center(pose_sample, "right"):
+                return "right"
+
+        # left — full extension on YOUR LEFT (true cam: image-right)
+        if rw.x > center_x + self.side_margin and right_reach >= self.extension_min:
             return "left"
 
-        # right — partner's left arm crosses to image-right
-        if lw.x > center_x + self.side_margin and left_reach >= self.extension_min:
+        # right — full extension on YOUR RIGHT (true cam: image-left)
+        if lw.x < center_x - self.side_margin and left_reach >= self.extension_min:
             return "right"
 
         # center — straight thrust: both wrists near midline, extended forward

@@ -68,7 +68,7 @@ REDTOY_SESSION: list[CollectionPose] = [
         6,
         "Orientations",
     ),
-    # Phase 2 — strike END poses (names match AttackDirection = IMAGE direction)
+    # Phase 2 — strike END poses (names match AttackDirection = body cross-body)
     CollectionPose(
         "strike_high",
         "vertical",
@@ -80,16 +80,16 @@ REDTOY_SESSION: list[CollectionPose] = [
     CollectionPose(
         "strike_left",
         "diagonal",
-        "Attack LEFT — swing to IMAGE LEFT, then HOLD the END: saber fully extended "
-        "toward the LEFT edge of the screen (not wind-up; → robot BLOCK_LEFT)",
+        "Attack LEFT — RIGHT arm to YOUR LEFT; swing right → left, HOLD END on YOUR LEFT "
+        "(not wind-up; → robot BLOCK_LEFT)",
         6,
         "Strike poses",
     ),
     CollectionPose(
         "strike_right",
         "diagonal",
-        "Attack RIGHT — swing to IMAGE RIGHT, then HOLD the END: saber fully extended "
-        "toward the RIGHT edge of the screen (not wind-up; → robot BLOCK_RIGHT)",
+        "Attack RIGHT — LEFT arm to YOUR RIGHT; swing left → right, HOLD END on YOUR RIGHT "
+        "(not wind-up; → robot BLOCK_RIGHT)",
         6,
         "Strike poses",
     ),
@@ -152,6 +152,35 @@ REDTOY_SESSION: list[CollectionPose] = [
         4,
         "Negatives",
     ),
+    # Phase 5 — live-eval gaps (positive partial blades; do NOT use other/neg_partial)
+    CollectionPose(
+        "edge_partial",
+        "diagonal",
+        "Wide extension — tip at or past frame edge; label VISIBLE blade only (positive)",
+        8,
+        "Edge cases",
+    ),
+    CollectionPose(
+        "centerline_block",
+        "diagonal",
+        "Centerline block — cross-body strike STOPPED at body midline, hold for robot block",
+        6,
+        "Edge cases",
+    ),
+    CollectionPose(
+        "withdraw_left",
+        "horizontal",
+        "Withdraw LEFT — after right strike blocked: pull saber back toward YOUR LEFT",
+        4,
+        "Edge cases",
+    ),
+    CollectionPose(
+        "withdraw_right",
+        "horizontal",
+        "Withdraw RIGHT — after left strike blocked: pull saber back toward YOUR RIGHT",
+        4,
+        "Edge cases",
+    ),
 ]
 
 # ~28 shots — fine-tune add-on for new blade colors (same shape as redtoy)
@@ -161,8 +190,8 @@ MULTICOLOR_SHORT_SESSION: list[CollectionPose] = [
     CollectionPose("v_down", "vertical", "Vertical — blade pointing DOWN", 3, "Orientations"),
     CollectionPose("d_l2r", "diagonal", "Diagonal — blade angled toward IMAGE LEFT", 3, "Orientations"),
     CollectionPose("d_r2l", "diagonal", "Diagonal — blade angled toward IMAGE RIGHT", 3, "Orientations"),
-    CollectionPose("strike_left", "diagonal", "Attack LEFT — HOLD END toward LEFT edge of screen", 2, "Strike poses"),
-    CollectionPose("strike_right", "diagonal", "Attack RIGHT — HOLD END toward RIGHT edge of screen", 2, "Strike poses"),
+    CollectionPose("strike_left", "diagonal", "Attack LEFT — HOLD END on YOUR LEFT side", 2, "Strike poses"),
+    CollectionPose("strike_right", "diagonal", "Attack RIGHT — HOLD END on YOUR RIGHT side", 2, "Strike poses"),
     CollectionPose("strike_high", "vertical", "Attack HIGH — HOLD saber above shoulders", 2, "Strike poses"),
     CollectionPose("strike_center", "vertical", "Attack CENTER — full thrust at camera, HOLD END", 2, "Strike poses"),
     CollectionPose("edge_partial", "diagonal", "Wide extension — tip at or past frame edge (visible blade only)", 2, "Edge cases"),

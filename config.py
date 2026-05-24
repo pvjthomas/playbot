@@ -53,6 +53,7 @@ ENABLE_DEPTH_ATTACK_HINTS = False       # DepthAugmentedAttackVision fusion (stu
 # MediaPipe strike tuning (meanings documented in vision.py)
 HIGH_MARGIN = 0.06      # overhead → "high"
 SIDE_MARGIN = 0.12      # cross-body reach → "left" / "right"
+CENTERLINE_MARGIN = 0.054  # ~SIDE_MARGIN * 0.45 — robot block / withdraw start at midline
 EXTENSION_MIN = 0.18    # min arm extension (filters "none")
 # "center" uses SIDE_MARGIN * 0.4 in vision.py — both wrists at midline
 
@@ -62,9 +63,18 @@ SWING_RESPOND_ON_BEGIN = True  # fire on begin phase; if False, mid/end only
 SWING_HISTORY_SEC = 0.6           # landmark ring buffer window
 SWING_WRIST_MERGE_DIST = 0.12       # two-hand grip midpoint when wrists close
 SWING_BEGIN_VELOCITY = 0.35         # norm coords/s — motion starts
+SWING_BEGIN_MIN_SEC = 0.20          # force begin phase for this long after session start
 SWING_IDLE_VELOCITY = 0.12          # below this → swing cooling down
 SWING_IDLE_FRAMES = 6               # consecutive slow frames before idle
-SWING_BEGIN_MAX_SEC = 0.15          # max wind-up duration before mid
+SWING_BEGIN_MAX_SEC = 0.30          # max wind-up duration before mid
+SWING_VELOCITY_DIR_MIN = 0.20       # min |v| (norm/s) to label direction from velocity
+# Off-hand / body-right (left arm) — right-handed asymmetry; see swing_tracker._direction_from_delta
+SWING_RIGHT_VELOCITY_DIR_MIN = 0.14  # lower speed bar for ``right`` / −vx travel
+SWING_RIGHT_DIRECTION_MIN = 0.035    # min |dx| to call ``right`` (vs SWING_DIRECTION_MIN for left)
+SWING_RIGHT_LATERAL_DOMINANCE = 0.55 # abs(dx) >= abs(dy)*this → lateral beats ``high`` (−vx)
+SWING_LEFT_LATERAL_DOMINANCE = 0.72  # same for +vx (withdraw-left / left travel; mild relax)
+SWING_RIGHT_LATCH_SPEED_RATIO = 0.30 # latch off-hand dir at lower speed (× SWING_BEGIN_VELOCITY)
+SWING_STRONG_SPEED_RATIO = 0.50     # scoring: frames above this fraction of peak speed
 SWING_MID_SPEED_RATIO = 0.45        # fraction of session peak speed → mid
 SWING_MID_EXT_RATIO = 0.72          # extension vs peak → likely past mid
 SWING_END_EXT_RATIO = 0.88          # extension near peak → end phase
@@ -74,6 +84,13 @@ SWING_AXIS_DOMINANCE = 1.35         # lateral vs vertical axis winner
 SWING_THRUST_EXT_MIN = 0.05         # min extension gain for thrust
 SWING_THRUST_LATERAL_MAX = 0.05    # max lateral travel for thrust
 SWING_THRUST_VERTICAL_MAX = 0.08   # max vertical travel for thrust (not overhead)
+SWING_OVERHEAD_RISE_MIN = 0.07     # min upward travel (norm y) to latch overhead arc
+SWING_OVERHEAD_CHOP_MAX = 0.25     # max downward travel after peak while still "high"
+SWING_FUSE_SABER = True             # use YOLO saber tip/grip in swing_tracker when detected
+SABER_SWING_FUSE_MIN_CONF = 0.25    # min saber confidence to fuse into swing motion
+# Saber fusion track point (velocity/direction): tip | forearm | inset_tip
+# forearm = latched arm length from grip along blade; inset_tip = same length back from tip
+SWING_SABER_TRACK_POINT = "inset_tip"
 
 ENABLE_YOLO = False
 YOLO_EVERY_N_FRAMES = 5
@@ -96,6 +113,19 @@ SABER_COLOR_SEARCH_RADIUS_PX = 35  # lateral search width along forearm ray
 SABER_MIN_COLOR_PIXELS = 20  # min red pixels to trust color tip over geometry
 SABER_MODEL = "../models/saber_runs/redtoy_78shot/weights/best.pt"  # 78 manual green boxes
 SABER_YOLO_MAX_GRIP_DIST_PX = 120
+SABER_YOLO_EVERY_N_FRAMES = 3  # run YOLO every N frames; reuse blade axis in between
+SABER_YOLO_CONFIDENCE = 0.35  # min box conf at inference + cache retention
+SABER_YOLO_CACHE_BLEND = 0.35  # blend cached blade toward forearm between YOLO frames
+SABER_YOLO_MIN_GRIP_ALIGN = -0.15  # min forearm alignment for grip→tip (cos)
+SABER_FUSE_YOLO_ONLY = False  # when True, swing fusion ignores pure arm geometry
+# Axis tracking todos — see SABER-AXIS-TODO.md and saber_axis_flags.py (--saber-axis PRESET)
+SABER_AXIS_PRESET = "1_color_roi"  # default: color PCA in YOLO bbox (see SABER-AXIS-TODO.md)
+SABER_AXIS_COLOR_ROI = True
+SABER_AXIS_COLOR_EACH_FRAME = False  # re-fit color axis on cached bbox every frame
+SABER_AXIS_TEMPORAL = False  # EMA smooth angle + length per hand
+SABER_AXIS_SMOOTH_ALPHA = 0.45  # 0=heavy smooth, 1=no smooth
+SABER_AXIS_TIP_IN_FRAME = False  # clamp tip to visible color; set tip_in_frame on SaberLine
+SABER_FUSE_REQUIRE_TIP_IN_FRAME = False  # skip swing fusion when tip extrapolated off-screen
 
 # --- App (Developer 3) ---
 SHOW_PREVIEW = True
