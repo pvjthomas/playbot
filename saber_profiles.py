@@ -26,6 +26,27 @@ SABER_PROFILES: dict[str, dict[str, Any]] = {
         "SABER_MIN_COLOR_PIXELS": 25,
         "SABER_MIN_FOREARM_REACH": 0.08,
     },
+    # Starting HSV — run calibrate_saber_color.py after labeling
+    "pinksaber": {
+        "SABER_USE_COLOR_TIP": True,
+        "SABER_COLOR_HSV_RANGES": [
+            ((140, 50, 80), (175, 255, 255)),
+        ],
+        "SABER_BLADE_LENGTH_RATIO": 0.55,
+        "SABER_COLOR_SEARCH_RADIUS_PX": 45,
+        "SABER_MIN_COLOR_PIXELS": 25,
+        "SABER_MIN_FOREARM_REACH": 0.08,
+    },
+    "yellowsaber": {
+        "SABER_USE_COLOR_TIP": True,
+        "SABER_COLOR_HSV_RANGES": [
+            ((18, 80, 100), (38, 255, 255)),
+        ],
+        "SABER_BLADE_LENGTH_RATIO": 0.55,
+        "SABER_COLOR_SEARCH_RADIUS_PX": 45,
+        "SABER_MIN_COLOR_PIXELS": 25,
+        "SABER_MIN_FOREARM_REACH": 0.08,
+    },
 }
 
 

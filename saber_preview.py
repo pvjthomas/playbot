@@ -5,10 +5,11 @@ Run (MacBook webcam + red toy saber):
   cd projects/lightsaber
   source .venv/bin/activate
   python saber_preview.py --saber redtoy --camera laptop
+  python saber_preview.py --saber redtoy --detector color --camera laptop
 
 Keys:
   q — quit
-  m — toggle color mask debug (tune red HSV for redtoy)
+  m — toggle color mask debug
 """
 
 from __future__ import annotations
@@ -20,6 +21,7 @@ import cv2
 
 import config
 from camera import add_camera_cli, configure_camera_from_args, open_camera
+from color_saber_detector import ColorSaberDetector, calibration_path
 from overlays import AttackOverlay
 from saber_detector import SaberDetector, draw_saber_overlay
 from saber_profiles import apply_saber_profile, list_profiles
@@ -34,6 +36,12 @@ def parse_args():
         default="redtoy",
         help=f"Saber profile ({', '.join(list_profiles())}); default: redtoy",
     )
+    parser.add_argument(
+        "--detector",
+        choices=("legacy", "color"),
+        default="legacy",
+        help="legacy = forearm/YOLO stub; color = calibrated HSV (fast, no YOLO weights)",
+    )
     return parser.parse_args()
 
 
@@ -46,14 +54,23 @@ def main():
 
     camera = open_camera()
     vision = AttackVision()
-    saber_det = SaberDetector()
+    color_det = None
+    saber_det = None
+    if args.detector == "color":
+        if not calibration_path(args.saber).is_file():
+            raise SystemExit(
+                f"Missing color calibration. Run: python calibrate_saber_color.py --saber {args.saber}"
+            )
+        color_det = ColorSaberDetector(args.saber)
+    else:
+        saber_det = SaberDetector()
+
     overlay = AttackOverlay()
     t_prev = time.monotonic()
     show_mask = False
 
-    print(f"Saber preview — profile={profile!r}, camera={config.CAMERA_SOURCE!r}")
-    print("Hold saber in different orientations. Grip at wrist, blade along forearm.")
-    print("Keys: q=quit  m=toggle red color mask (debug HSV)")
+    print(f"Saber preview — profile={profile!r}, detector={args.detector}, camera={config.CAMERA_SOURCE!r}")
+    print("Keys: q=quit  m=toggle color mask debug")
 
     try:
         while True:
@@ -67,8 +84,13 @@ def main():
 
             direction = vision.detect_attack(frame)
             landmarks = vision.last_landmarks
-            sabers = saber_det.detect_all(frame, landmarks)
-            primary = sabers[0] if sabers else None
+
+            if color_det is not None:
+                primary = color_det.detect_saber(frame, landmarks)
+                sabers = [primary] if primary else []
+            else:
+                sabers = saber_det.detect_all(frame, landmarks)
+                primary = sabers[0] if sabers else None
 
             preview = overlay.render_with_saber(
                 frame,
@@ -82,7 +104,10 @@ def main():
                 preview = draw_saber_overlay(preview, extra)
 
             if show_mask:
-                mask_vis = SaberDetector.color_debug_mask(frame)
+                if color_det is not None:
+                    mask_vis = color_det.debug_mask(frame, landmarks)
+                else:
+                    mask_vis = SaberDetector.color_debug_mask(frame)
                 if mask_vis is not None:
                     h = preview.shape[0]
                     mask_vis = cv2.resize(mask_vis, (preview.shape[1], h))
@@ -97,7 +122,10 @@ def main():
                 print(f"color mask debug: {'on' if show_mask else 'off'}")
     finally:
         vision.close()
-        saber_det.close()
+        if saber_det is not None:
+            saber_det.close()
+        if color_det is not None:
+            color_det.close()
         camera.release()
         cv2.destroyAllWindows()
 

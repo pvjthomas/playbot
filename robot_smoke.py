@@ -5,8 +5,12 @@ Hardware smoke tests for PiPER (no camera). Linux VM or macOS host.
   python robot_smoke.py              # DRY_RUN pose sequence
   python robot_smoke.py --probe-can  # check can0 (Linux) or gs_usb (macOS)
   python robot_smoke.py --preflight  # firmware + CAN send + state (no motion)
-  python robot_smoke.py --connect    # preflight, then LIVE enable + HOME
-  python robot_smoke.py --live --pose HOME --i-know  # preflight, then move
+  python robot_smoke.py --connect    # preflight, then LIVE enable + hold pose
+  python robot_smoke.py --live --pose HOME --i-know
+
+After a live test the arm holds at GUARD_CENTER (configurable):
+  Enter   — close host CAN only; arm keeps torque (normal exit)
+  Ctrl+C  — software e-stop (DisableArm, cuts torque)
 
 macOS: see MAC-ROBOT.md (brew install libusb, pip install "python-can[gs-usb]").
 """
@@ -16,6 +20,7 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
+import threading
 import time
 
 import config
@@ -86,7 +91,44 @@ def _dry_run_sequence() -> int:
     return 0
 
 
-def _live_connect_only() -> int:
+def _wait_for_enter_or_estop(robot: PiperRobot) -> None:
+    """Enter = close CAN (keep torque). Ctrl+C = software e-stop (DisableArm)."""
+    enter_pressed = threading.Event()
+
+    def _read_enter() -> None:
+        try:
+            input()
+            enter_pressed.set()
+        except EOFError:
+            pass
+
+    threading.Thread(target=_read_enter, daemon=True).start()
+
+    print("[smoke] Enter — close host CAN (arm keeps torque).")
+    print("[smoke] Ctrl+C — software e-stop (DisableArm, cuts torque).")
+    try:
+        while not enter_pressed.is_set():
+            time.sleep(0.1)
+    except KeyboardInterrupt:
+        print("\n[smoke] Software e-stop (Ctrl+C)")
+        robot.software_estop()
+        raise SystemExit(130) from None
+
+    print("[smoke] Enter — closing host CAN, motors stay enabled on arm.")
+    robot.close_can()
+
+
+def _finish_live_session(robot: PiperRobot, end_pose: RobotPose) -> None:
+    print(f"[smoke] Moving to hold pose {end_pose}...")
+    robot.move_to_pose(end_pose)
+    settle = config.ROBOT_MOVE_SETTLE_SEC
+    print(f"[smoke] Settling {settle:.1f}s at {end_pose}...")
+    time.sleep(settle)
+    print(f"[smoke] Holding {end_pose} — motors enabled.")
+    _wait_for_enter_or_estop(robot)
+
+
+def _live_connect_only(*, end_pose: RobotPose) -> int:
     if _require_preflight() != 0:
         return 1
     old = config.DRY_RUN
@@ -95,8 +137,10 @@ def _live_connect_only() -> int:
         robot = PiperRobot(safety=SafetyGuard(dry_run=False))
         robot.connect()
         print("[smoke] LIVE connect OK (EnableArm + HOME sent)")
-        robot.disconnect()
+        _finish_live_session(robot, end_pose)
         return 0
+    except SystemExit:
+        raise
     except Exception as exc:
         print(f"[smoke] LIVE connect FAILED: {exc}")
         return 1
@@ -104,7 +148,7 @@ def _live_connect_only() -> int:
         config.DRY_RUN = old
 
 
-def _live_pose(name: RobotPose) -> int:
+def _live_pose(name: RobotPose, *, end_pose: RobotPose) -> int:
     if _require_preflight() != 0:
         return 1
     old = config.DRY_RUN
@@ -114,11 +158,12 @@ def _live_pose(name: RobotPose) -> int:
         robot.connect()
         time.sleep(0.5)
         robot.move_to_pose(name)
-        time.sleep(2.0)
-        robot.move_to_pose("HOME")
-        robot.disconnect()
-        print(f"[smoke] LIVE pose {name} sent")
+        time.sleep(config.ROBOT_MOVE_SETTLE_SEC)
+        _finish_live_session(robot, end_pose)
+        print(f"[smoke] LIVE pose {name} OK")
         return 0
+    except SystemExit:
+        raise
     except Exception as exc:
         print(f"[smoke] LIVE pose FAILED: {exc}")
         return 1
@@ -134,9 +179,15 @@ def main() -> int:
         action="store_true",
         help="Firmware + CAN probe send + joint/status read (no motion)",
     )
-    parser.add_argument("--connect", action="store_true", help="Preflight, then LIVE enable + HOME")
+    parser.add_argument("--connect", action="store_true", help="Preflight, then LIVE enable + hold")
     parser.add_argument("--live", action="store_true", help="Preflight, then LIVE joint motion")
     parser.add_argument("--pose", default="HOME", choices=list(JOINT_POSES.keys()))
+    parser.add_argument(
+        "--end-pose",
+        default=config.ROBOT_SMOKE_END_POSE,
+        choices=list(JOINT_POSES.keys()),
+        help="Hold pose after live test (default: GUARD_CENTER)",
+    )
     parser.add_argument(
         "--i-know",
         action="store_true",
@@ -149,12 +200,12 @@ def main() -> int:
     if args.preflight:
         return _require_preflight()
     if args.connect:
-        return _live_connect_only()
+        return _live_connect_only(end_pose=args.end_pose)
     if args.live:
         if not args.i_know:
             print("Refusing --live without --i-know (safety).")
             return 2
-        return _live_pose(args.pose)
+        return _live_pose(args.pose, end_pose=args.end_pose)
     return _dry_run_sequence()
 
 

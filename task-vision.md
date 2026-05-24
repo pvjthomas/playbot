@@ -16,7 +16,7 @@ git checkout -b feature/vision    # first time only
 source .venv/bin/activate
 python vision.py                 # vision-only preview (your files)
 python main.py                   # full app integration test
-python -m unittest tests.test_vision tests.test_orbbec
+python -m unittest tests.test_vision tests.test_orbbec tests.test_camera_orientation
 ```
 
 Optional Orbbec RGB-D (depth / IR):
@@ -64,6 +64,29 @@ On **Ubuntu** at the arm, `--camera piper` uses `/dev/video*` and is fast like t
 Config keys: `CAMERA_SOURCE`, `CAMERA_BACKEND`, `PIPER_CAMERA_NAME`, `CAMERA_WIDTH/HEIGHT`.
 More detail: **[CAMERA.md](CAMERA.md)** (hardware + Orbbec SDK links), README § Camera, `camera.py` docstring.
 
+### Wrist-mounted Orbbec — image orientation plan
+
+The Dabai on the **wrist** is not a fixed desk webcam. Raw frames may be **rotated
+(90°/180°/270°)**, **flipped**, or **mirror-preview** like the laptop cam. During
+**high block** the lens may point **up at the ceiling** or **away from the partner**
+while attack labels still use **image left/right** (`directions.py`).
+
+| Phase | What | Module / command |
+|-------|------|------------------|
+| **1 — Install cal (fixed)** | At `GUARD_CENTER`, partner in frame: head → top of image, image-left = left edge | `python camera_calibrate_orientation.py --camera piper` → `camera_orientation.json` |
+| **1b — Mirror** | Same as laptop: right hand on which side of screen? | `python camera_calibrate_mirror.py --camera piper` |
+| **2 — Enable correction** | Vision sees canonical BGR (+ depth if Orbbec) | `CAMERA_APPLY_ORIENTATION_CORRECTION = True` (and mirror flag if needed) |
+| **3 — Pose-dependent FOV** | Arm rotates → image “up” rotates with wrist | **Default:** keep detection **image-relative** (velocity / END pose in current frame). **Optional:** `ORBBEC_ENABLE_IMU` + `derotate_frame_with_imu_stub()` |
+| **4 — High attack** | Camera may not see partner face-on | Prefer **temporal** cues + depth hints; document `mount_facing` (`toward_partner` vs `away_from_partner`) |
+
+**Stub code:** `camera_orientation.py`, `camera_calibrate_orientation.py`, tests in
+`tests/test_camera_orientation.py`. Orbbec path applies the same transform to
+`depth_mm` in `orbbec_camera.read_frameset()`.
+
+**Do not** change `AttackDirection` semantics — only normalize pixels before
+`detect_attack()`. If correction is off, labels still mean image axes on the **raw**
+frame (document which in overlays).
+
 ## Milestone 1 — Working detection (current sprint)
 
 - [ ] Confirm camera opens (`python camera.py --list`, then `python vision.py --camera piper` or `--camera laptop`)
@@ -93,7 +116,9 @@ the arm can move during the swing, not after it.
 are the primary motion signal. YOLO saber bbox is optional fusion when trained weights
 are available — not required for temporal phase or linear direction.
 
-Full spec: **`directions.py`** § *Temporal swing estimation*.
+Full spec: **`directions.py`** § *Temporal swing estimation* and **[DIRECTIONS.md](DIRECTIONS.md)**.
+
+Training index: **[TRAINING-PLAN.md](TRAINING-PLAN.md)**.
 
 ### Motion model
 

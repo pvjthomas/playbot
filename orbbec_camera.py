@@ -18,6 +18,7 @@ import time
 import numpy as np
 
 import config
+from camera_orientation import apply_camera_frame_correction, apply_camera_frameset_correction
 from orbbec_frames import OrbbecFrameSet, depth_uint16_to_mm, frame_to_bgr_image
 from orbbec_sdk import OrbbecSdkUnavailableError, install_hint, require_sdk
 
@@ -113,8 +114,8 @@ class OrbbecCamera:
             ir=ir,
             timestamp_ms=time.monotonic() * 1000.0,
         )
-        self._last_frameset = result
-        return result
+        self._last_frameset = apply_camera_frameset_correction(result)
+        return self._last_frameset
 
     @property
     def last_frameset(self) -> OrbbecFrameSet | None:
@@ -123,7 +124,9 @@ class OrbbecCamera:
     def read_frame(self):
         """Color-only frame for the existing vision loop."""
         fs = self.read_frameset()
-        return fs.color if fs else None
+        if fs and fs.color is not None:
+            return fs.color
+        return None
 
     def release(self) -> None:
         if self._pipeline is not None:

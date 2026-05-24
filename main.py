@@ -13,6 +13,9 @@ Run:
     See README.md § Camera for full command list.
 
 Keys: q=quit  e=emergency stop  h=home
+
+Temporal swing (Milestone 2): set USE_TEMPORAL_SWING = True in config.py
+  — robot responds on begin/mid/end via detect_swing(), not END-pose edges.
 """
 
 import argparse
@@ -28,6 +31,7 @@ from overlays import AttackOverlay
 from robot import PiperRobot
 from safety import SafetyGuard
 from sounds import SoundEngine
+from swing_trigger import SwingTriggerKey, compute_swing_trigger, display_direction
 from vision import AttackVision
 
 
@@ -46,10 +50,15 @@ def main():
     dashboard = ConsoleDashboard()
 
     robot.connect()
-    print(f"AI Lightsaber Trainer — DRY_RUN={config.DRY_RUN}")
+    temporal = config.USE_TEMPORAL_SWING
+    print(f"AI Lightsaber Trainer — DRY_RUN={config.DRY_RUN}  temporal={temporal}")
+    if temporal:
+        begin = "on" if config.SWING_RESPOND_ON_BEGIN else "off"
+        print(f"  swing trigger: begin={begin}, mid/end on (see config.USE_TEMPORAL_SWING)")
     print(f"Keys: {config.QUIT_KEY}=quit  {config.EMERGENCY_STOP_KEY}=stop  {config.HOME_KEY}=home")
 
     last_direction: AttackDirection = "none"
+    last_swing_key: SwingTriggerKey = None
     t_prev = time.monotonic()
 
     try:
@@ -62,11 +71,23 @@ def main():
             fps = 1.0 / max(now - t_prev, 1e-6)
             t_prev = now
 
-            direction = vision.detect_attack(frame)
-
-            if direction != "none" and direction != last_direction:
-                robot.respond_to_attack(direction)
-                sounds.play_for_attack(direction)
+            swing = None
+            if temporal:
+                swing = vision.detect_swing(frame)
+                direction = display_direction(swing)
+                should_respond, last_swing_key, respond_dir = compute_swing_trigger(
+                    swing,
+                    last_swing_key,
+                    respond_on_begin=config.SWING_RESPOND_ON_BEGIN,
+                )
+                if should_respond and respond_dir is not None:
+                    robot.respond_to_attack(respond_dir)
+                    sounds.play_for_attack(respond_dir)
+            else:
+                direction = vision.detect_attack(frame)
+                if direction != "none" and direction != last_direction:
+                    robot.respond_to_attack(direction)
+                    sounds.play_for_attack(direction)
 
             last_direction = direction
             dashboard.update(direction, robot.current_pose, fps)
@@ -78,6 +99,7 @@ def main():
                     fps=fps,
                     pose=vision.last_landmarks,
                     robot_pose=robot.current_pose,
+                    swing=swing,
                 )
                 cv2.imshow(config.WINDOW_TITLE, preview)
                 key = cv2.waitKey(1) & 0xFF

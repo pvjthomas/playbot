@@ -1,6 +1,9 @@
 """
 Canonical direction definitions — camera frame, attacks, robot blocks, and training.
 
+Human-readable export: **DIRECTIONS.md** (keep in sync with this module).
+Training index: **TRAINING-PLAN.md**.
+
 All teams and training prompts should use these terms consistently.
 
 Reference frame
@@ -9,6 +12,17 @@ Reference frame
   RIGHT** (right side of the screen/monitor). **y increases DOWN**.
 * **Partner** — person the camera sees (sparring opponent).
 * **Robot** — PiPER behind the camera, facing the partner (mirror of partner view).
+
+Wrist / Orbbec orientation (rotation + flip)
+--------------------------------------------
+Wrist-mounted cameras may deliver **sideways or upside-down** frames. Calibrate at
+robot guard pose so partner's head is toward the **top** of the image and image-left
+matches ``directions.py``::
+
+    python camera_calibrate_orientation.py --camera piper
+
+Then enable ``CAMERA_APPLY_ORIENTATION_CORRECTION`` in ``config.py``. See
+``camera_orientation.py`` and **task-vision.md** § *Wrist-mounted Orbbec*.
 
 Camera mirror (selfie flip)
 ---------------------------

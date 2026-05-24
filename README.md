@@ -108,6 +108,18 @@ robot.respond_to_attack(direction)
 
 Types: `AttackDirection`, `RobotPose`, protocols `AttackDetector`, `RobotController`.
 
+## Documentation
+
+| Doc | Purpose |
+|-----|---------|
+| [DIRECTIONS.md](DIRECTIONS.md) | Attack labels, END pose, temporal phases (canonical semantics) |
+| [TRAINING-PLAN.md](TRAINING-PLAN.md) | Vision milestones + saber training index |
+| [task-vision.md](task-vision.md) | Vision developer tasks & milestones |
+| [SABER-TRAINING.md](SABER-TRAINING.md) | Red saber YOLO pipeline |
+| [SABER-PINK-YELLOW.md](SABER-PINK-YELLOW.md) | Pink/yellow multicolor fine-tune |
+
+Code: `directions.py`, `saber_training_plan.py`, `saber_profiles.py`.
+
 ## Safety defaults
 
 - `DRY_RUN = True` in `config.py` — prints moves, no CAN motion

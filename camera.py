@@ -78,10 +78,10 @@ import numpy as np
 import config
 from camera_mirror import (
     active_camera_source_key,
-    apply_mirror_correction,
     get_mirror_preview,
     normalize_source_key,
 )
+from camera_orientation import apply_camera_frame_correction
 
 # Piper kit ships with Orbbec Dabai DC1 (UVC). Same device on Mac and Linux.
 _PIPER_CAMERA_NAMES = ("dabai", "orbbec", "dc1", "uvc camera vendorid_11205")
@@ -647,7 +647,7 @@ class Camera:
         else:
             ok, frame = self._cap.read()
             frame = frame if ok else None
-        return apply_mirror_correction(frame, getattr(self, "source_key", None))
+        return apply_camera_frame_correction(frame, getattr(self, "source_key", None))
 
     def release(self):
         if self._ffmpeg_cam is not None:

@@ -1,5 +1,8 @@
 # Saber YOLO training — redtoy (Mac webcam)
 
+**Pink / yellow sabers:** see **[SABER-PINK-YELLOW.md](SABER-PINK-YELLOW.md)** (fine-tune from
+`redtoy_78shot`, ~28 shots per color).
+
 Collect → **auto-label** → **direction review (L/R)** → **box review (y/n)** → train → plug into `saber_detector.py`.
 
 ## Direction definitions (read this first)
@@ -29,7 +32,9 @@ With `--interval 3`, **hold the END pose** for the whole window so auto-saves ma
 **YOLO photo folders** (`horizontal`, `vertical`, `diagonal`, `other`) = **static blade angle**
 for bbox training only — motion phase does not matter. YOLO class: **`lightsaber`**.
 
-Full spec: **`directions.py`**.
+Full spec: **`directions.py`** and **[DIRECTIONS.md](DIRECTIONS.md)**.
+
+Training index: **[TRAINING-PLAN.md](TRAINING-PLAN.md)**.
 
 ### Partial saber visibility (tip in / out of frame)
 
@@ -64,6 +69,26 @@ python collect_saber_trainer.py --saber redtoy --camera laptop --interval 3 --re
 | s / b / q | skip / back / quit |
 
 Output: `projects/models/saber_dataset/raw/redtoy/<label>/`
+
+---
+
+## Phase 2b — Color detector from your labels (fast, no YOLO weights)
+
+If the saber color is distinct (redtoy), calibrate a **HSV + pose arm-corridor** detector
+from your green manual boxes before (or instead of) full YOLO training:
+
+```bash
+python calibrate_saber_color.py --saber redtoy          # reads all manual_annotate/train
+python eval_color_saber.py --saber redtoy               # IoU vs your boxes + HTML gallery
+python saber_preview.py --saber redtoy --detector color --camera laptop
+```
+
+Writes `projects/models/saber_color/redtoy_calibration.json`. Uses **MediaPipe arm
+corridor** to ignore face/skin red elsewhere in frame. Blade axis comes from the **color
+blob**, not forearm direction.
+
+**When to use:** live preview, mask debug, temporal tip velocity (~5–15 ms/frame vs ~100 ms
+YOLO). **When to train YOLO:** tighter boxes on partial blades and harder lighting.
 
 ---
 

@@ -30,6 +30,17 @@ python vision.py --orbbec-sdk
 
 Config keys: `ORBBEC_ENABLE_DEPTH`, `ORBBEC_ENABLE_IR`, `ENABLE_DEPTH_ATTACK_HINTS`, `ORBBEC_*_MM` thresholds.
 
+### Wrist mount orientation
+
+When the camera is on the **arm**, calibrate rotation and flip once at guard pose:
+
+```bash
+python camera_calibrate_orientation.py --camera piper
+python camera_calibrate_mirror.py --camera piper   # if needed
+```
+
+Enable in `config.py`: `CAMERA_APPLY_ORIENTATION_CORRECTION = True`. See `camera_orientation.py` and **task-vision.md** § *Wrist-mounted Orbbec*.
+
 ## Hardware (this project)
 
 | Item | Value |

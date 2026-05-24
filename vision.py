@@ -149,6 +149,11 @@ class AttackVision:
     def last_swing(self) -> SwingState:
         return self._last_swing
 
+    def reset_swing(self) -> None:
+        """Clear temporal history between eval trials or swings."""
+        self._swing_tracker.reset()
+        self._last_swing = SwingState(direction="none", phase="idle", kind="none")
+
     @property
     def last_direction(self) -> AttackDirection:
         return self._last_direction

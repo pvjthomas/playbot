@@ -154,8 +154,26 @@ REDTOY_SESSION: list[CollectionPose] = [
     ),
 ]
 
+# ~28 shots — fine-tune add-on for new blade colors (same shape as redtoy)
+MULTICOLOR_SHORT_SESSION: list[CollectionPose] = [
+    CollectionPose("h_chest", "horizontal", "Horizontal — blade left↔right at chest height", 4, "Orientations"),
+    CollectionPose("v_overhead", "vertical", "Vertical — blade pointing UP", 3, "Orientations"),
+    CollectionPose("v_down", "vertical", "Vertical — blade pointing DOWN", 3, "Orientations"),
+    CollectionPose("d_l2r", "diagonal", "Diagonal — blade angled toward IMAGE LEFT", 3, "Orientations"),
+    CollectionPose("d_r2l", "diagonal", "Diagonal — blade angled toward IMAGE RIGHT", 3, "Orientations"),
+    CollectionPose("strike_left", "diagonal", "Attack LEFT — HOLD END toward LEFT edge of screen", 2, "Strike poses"),
+    CollectionPose("strike_right", "diagonal", "Attack RIGHT — HOLD END toward RIGHT edge of screen", 2, "Strike poses"),
+    CollectionPose("strike_high", "vertical", "Attack HIGH — HOLD saber above shoulders", 2, "Strike poses"),
+    CollectionPose("strike_center", "vertical", "Attack CENTER — full thrust at camera, HOLD END", 2, "Strike poses"),
+    CollectionPose("edge_partial", "diagonal", "Wide extension — tip at or past frame edge (visible blade only)", 2, "Edge cases"),
+    CollectionPose("var_close", "horizontal", "Move CLOSER — saber fills more of frame", 2, "Variety"),
+    CollectionPose("var_one_hand", "diagonal", "One-hand grip — any diagonal", 2, "Variety"),
+]
+
 SESSIONS: dict[str, list[CollectionPose]] = {
     "redtoy": REDTOY_SESSION,
+    "pinksaber": MULTICOLOR_SHORT_SESSION,
+    "yellowsaber": MULTICOLOR_SHORT_SESSION,
 }
 
 

@@ -184,10 +184,11 @@ utmctl list
 utmctl usb list
 ```
 
-Attach (replace VM name if yours differs):
+Attach (replace VM name if yours differs). **Use full path if `utmctl` is not on PATH:**
 
 ```bash
-utmctl usb connect "Linux" "1d50:606f"
+/Applications/UTM.app/Contents/MacOS/utmctl usb connect "Linux" "1d50:606f"
+# or after symlink: utmctl usb connect "Linux" "1d50:606f"
 ```
 
 ### 4.3 Verify on VM
@@ -203,11 +204,16 @@ If empty → USB not attached; repeat 4.1 or 4.2.
 
 ## Part 5 — Bring up CAN and discover the arm
 
-On the **VM** (after USB attach):
+On the **VM** (after USB attach from Part 4):
 
 ```bash
-bash ~/piper-vision-hackathon/projects/lightsaber/ubuntu_shared/can-up.sh
+lsusb | grep 1d50
+bash ~/piper-vision-hackathon/projects/ubuntu_shared/can-up.sh
+# monorepo layout on VM — or use lightsaber/ubuntu_shared/can-up.sh if synced from git
 # enter sudo password once per boot
+
+timeout 3 candump can0
+# expect many frames (0x2A1, 0x251–0x256, …). Empty = arm off or CAN cable unplugged.
 
 cd ~/piper-vision-hackathon/projects/lightsaber
 source .venv/bin/activate
@@ -219,12 +225,20 @@ python robot_discover.py
 ```
 [OK] USB-CAN adapter
 [OK] can0 — UP, bitrate 1000000
-[OK] CAN frames          (optional; needs can-utils)
+[OK] CAN frames
 [OK] PiPER on bus — Hz=... joints(deg)=[...]
-PASS — robot path looks good
+PASS — robot path looks good. Next: python robot_smoke.py --preflight
 ```
 
 `piper_sdk` SyntaxWarnings are harmless.
+
+**Keep code updated on VM** (rsync from Mac — the VM folder is often not a git clone):
+
+```bash
+rsync -az --exclude '.venv' --exclude '__pycache__' --exclude '.git' \
+  ~/Projects/piper-vision-hackathon/projects/lightsaber/ \
+  philip@192.168.64.4:~/piper-vision-hackathon/projects/lightsaber/
+```
 
 ---
 
@@ -236,9 +250,11 @@ All from VM, `source .venv/bin/activate`:
 |------|---------|----------------|
 | Software only | `python robot_smoke.py` | DRY_RUN poses, no CAN |
 | Preflight | `python robot_smoke.py --preflight` | Firmware, CAN send probe, read state (no motion) |
-| Live connect | `python robot_smoke.py --connect` | Preflight, then SDK enable + HOME |
-| Live motion | `python robot_smoke.py --live --pose HOME --i-know` | Arm moves (clear workspace!) |
+| Live connect | `python robot_smoke.py --connect` | Preflight, enable, hold **GUARD_CENTER** |
+| Live motion | `python robot_smoke.py --live --pose HOME --i-know` | Test move → hold pose |
 | Block pose | `python robot_smoke.py --live --pose BLOCK_LEFT --i-know` | After calibrating `poses.py` |
+
+**Exit while holding:** **Enter** = close host CAN, **keep torque**. **Ctrl+C** = software e-stop (**DisableArm**, cuts torque).
 
 Keep `DRY_RUN = True` in git. Speed: `ROBOT_MOVE_SPEED_PERCENT = 30` in `config.py`.
 
@@ -246,24 +262,33 @@ Full checklist: [VM-ROBOT-CHECKLIST.md](VM-ROBOT-CHECKLIST.md)
 
 ---
 
-## Part 7 — After reboot (Mac or VM)
+## Part 7 — Daily startup (after every Mac or VM reboot)
 
-No full reinstall — repeat **USB + CAN** only:
+USB passthrough **does not persist**. Repeat **every session** — no reinstall.
 
-**Mac:**
+**Mac** (VM must be running in UTM):
 
 ```bash
-# start VM in UTM first
-utmctl usb connect "Linux" "1d50:606f"
+/Applications/UTM.app/Contents/MacOS/utmctl usb connect "Linux" "1d50:606f"
 ```
 
 **VM:**
 
 ```bash
-bash ~/piper-vision-hackathon/projects/lightsaber/ubuntu_shared/can-up.sh
+lsusb | grep 1d50
+bash ~/piper-vision-hackathon/projects/ubuntu_shared/can-up.sh
+timeout 3 candump can0
 cd ~/piper-vision-hackathon/projects/lightsaber && source .venv/bin/activate
 python robot_discover.py
+python robot_smoke.py --preflight
 ```
+
+| Symptom | Meaning |
+|---------|---------|
+| `can0` missing | Re-run `utmctl usb connect` on Mac |
+| `can0` DOWN | Run `can-up.sh` |
+| `candump` empty, `lsusb` OK | **Arm powered off** or CAN cable to arm unplugged |
+| `candump` busy, discover FAIL | Rare — check bitrate 1000000, replug USB |
 
 ---
 
@@ -290,6 +315,7 @@ Piper camera on Mac: [../README.md](../README.md) § Camera.
 | candleLight on Mac, not VM | Attach via UTM USB; device leaves Mac when attached |
 | `can0` missing | USB attached? `dmesg \| tail` (may need sudo) |
 | `can0` DOWN | Run `can-up.sh` |
+| `candump` empty but `lsusb` shows adapter | Arm **power off** or CAN cable to arm unplugged |
 | SSH “No route to host” from Cursor | Local Network permission for Cursor |
 | `ssh-copy-id` “No identities” on VM | Run **on Mac**, not inside VM SSH |
 | Mac `robot_discover` Errno 13 | Expected for candleLight; use QEMU VM |
@@ -309,7 +335,7 @@ Piper camera on Mac: [../README.md](../README.md) § Camera.
 | CAN adapter USB ID | `1d50:606f` |
 | Interface | `can0` @ **1000000** bps |
 | Code on VM | `~/piper-vision-hackathon/projects/lightsaber` |
-| utmctl attach | `utmctl usb connect "Linux" "1d50:606f"` |
+| utmctl attach | `/Applications/UTM.app/Contents/MacOS/utmctl usb connect "Linux" "1d50:606f"` |
 
 ---
 

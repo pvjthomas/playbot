@@ -6,7 +6,7 @@ from contracts import RobotPose
 
 # Six joint angles in degrees (J1–J6). Calibrate on hardware.
 JOINT_POSES: dict[RobotPose, tuple[float, float, float, float, float, float]] = {
-    "HOME": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    "HOME": (0.0, 30.0, -20.0, 40.0, 0.0, 0.0),
     "GUARD_CENTER": (0.0, 30.0, -20.0, 40.0, 0.0, 0.0),
     "BLOCK_LEFT": (-35.0, 45.0, -60.0, 30.0, 15.0, 0.0),
     "BLOCK_RIGHT": (35.0, 45.0, 60.0, 30.0, -15.0, 0.0),

@@ -8,6 +8,8 @@ CAN_BUSTYPE = "auto"  # auto | socketcan | gs_usb | slcan — auto: socketcan on
 CAN_CHANNEL = "auto"  # auto: can0 (Linux) or gs_usb index 0 (macOS)
 CAN_BITRATE = 1000000  # PiPER bus (1 Mbps)
 ROBOT_MOVE_SPEED_PERCENT = 30  # piper_sdk ModeCtrl speed (0–100); keep low for first LIVE tests
+ROBOT_MOVE_SETTLE_SEC = 3.0  # wait after JointCtrl before considering move done
+ROBOT_SMOKE_END_POSE = "GUARD_CENTER"  # stable hold pose after live smoke tests
 
 # --- Vision (Developer 1) ---
 #
@@ -30,6 +32,10 @@ CAMERA_FPS = 30
 # Run: python camera_calibrate_mirror.py --camera laptop
 CAMERA_MIRROR_BY_SOURCE: dict[str, bool] = {}  # e.g. {"laptop": True, "piper": False}
 CAMERA_APPLY_MIRROR_CORRECTION = False  # flip frames to canonical view when mirror_preview True
+# Wrist / Orbbec install rotation (90/180/270) + flip — see camera_orientation.py
+CAMERA_ORIENTATION_BY_SOURCE: dict[str, dict] = {}  # e.g. piper: rotation_deg, flip_h, mount_facing
+CAMERA_APPLY_ORIENTATION_CORRECTION = False  # apply camera_orientation.json before vision
+WRIST_CAM_REFERENCE_POSE = "GUARD_CENTER"  # calibrate orientation at this robot pose
 USE_FAKE_ATTACKS = False  # True = cycle fake directions (no MediaPipe needed)
 FAKE_ATTACK_CYCLE_SEC = 2.0
 
@@ -51,6 +57,8 @@ EXTENSION_MIN = 0.18    # min arm extension (filters "none")
 # "center" uses SIDE_MARGIN * 0.4 in vision.py — both wrists at midline
 
 # Temporal swing (swing_tracker.py — Milestone 2)
+USE_TEMPORAL_SWING = False  # main.py: detect_swing + phase-based robot trigger (vs END-pose edges)
+SWING_RESPOND_ON_BEGIN = True  # fire on begin phase; if False, mid/end only
 SWING_HISTORY_SEC = 0.6           # landmark ring buffer window
 SWING_WRIST_MERGE_DIST = 0.12       # two-hand grip midpoint when wrists close
 SWING_BEGIN_VELOCITY = 0.35         # norm coords/s — motion starts
@@ -86,7 +94,7 @@ SABER_TIP_HSV_HIGH = None
 SABER_COLOR_HSV_RANGES = None  # list of (low, high) BGR HSV tuples, e.g. redtoy profile
 SABER_COLOR_SEARCH_RADIUS_PX = 35  # lateral search width along forearm ray
 SABER_MIN_COLOR_PIXELS = 20  # min red pixels to trust color tip over geometry
-SABER_MODEL = "../models/saber_runs/redtoy_25shot-2/weights/best.pt"  # 25 manual green boxes
+SABER_MODEL = "../models/saber_runs/redtoy_78shot/weights/best.pt"  # 78 manual green boxes
 SABER_YOLO_MAX_GRIP_DIST_PX = 120
 
 # --- App (Developer 3) ---

@@ -1,0 +1,12 @@
+{
+  "piper": {
+    "rotation_deg": 0,
+    "flip_h": false,
+    "flip_v": false,
+    "mount_facing": "unknown",
+    "mirror_preview": null,
+    "reference_pose": "GUARD_CENTER",
+    "mode": "fixed",
+    "note": "Run camera_calibrate_orientation.py --camera piper at guard pose"
+  }
+}

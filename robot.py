@@ -43,10 +43,6 @@ class PiperRobot:
         print(f"[robot] Connected ({profile.label})")
         self.move_to_pose("HOME")
 
-    def disconnect(self):
-        self._connected = False
-        print("[robot] Disconnected")
-
     def respond_to_attack(self, direction: AttackDirection):
         target = pose_for_attack(direction)
         if target is None:
@@ -58,6 +54,10 @@ class PiperRobot:
         self.safety.record_move()
 
     def move_to_pose(self, name: RobotPose):
+        if self.safety.emergency_stop_active:
+            print(f"[robot] blocked (move → {name})")
+            return
+
         pose = get_pose(name)
         self._current_pose = name
         joints = ", ".join(f"{j:.1f}" for j in pose.joints)
@@ -77,9 +77,51 @@ class PiperRobot:
         self._piper.JointCtrl(j1, j2, j3, j4, j5, j6)
         time.sleep(0.05)
 
+    def close_can(self):
+        """Close host CAN only — does not call DisableArm (arm keeps torque)."""
+        if self._piper is not None and not self.safety.dry_run:
+            try:
+                self._piper.DisconnectPort()
+            except Exception as exc:
+                print(f"[robot] DisconnectPort warning: {exc}")
+            print("[robot] Host CAN closed — motors still enabled on arm")
+        self._connected = False
+
+    def software_estop(self):
+        """Software e-stop: DisableArm (cuts torque) then close CAN."""
+        if self._piper is not None and not self.safety.dry_run:
+            try:
+                self._piper.DisableArm(7)
+            except Exception as exc:
+                print(f"[robot] DisableArm warning: {exc}")
+            try:
+                self._piper.DisconnectPort()
+            except Exception as exc:
+                print(f"[robot] DisconnectPort warning: {exc}")
+            print("[robot] Software e-stop — motors disabled")
+        self._connected = False
+
+    def disconnect(self, *, disable: bool = False):
+        """Close session. Default: close CAN only (keep torque). disable=True → software e-stop."""
+        if disable:
+            self.software_estop()
+            return
+        if self.safety.dry_run:
+            print("[robot] Disconnected")
+            self._connected = False
+            return
+        self.close_can()
+
     def emergency_stop(self):
         self.safety.trigger_emergency_stop()
-        print("[robot] hold position")
+        if self._piper is not None and not self.safety.dry_run:
+            try:
+                self._piper.DisableArm(7)
+            except Exception as exc:
+                print(f"[robot] DisableArm warning: {exc}")
+            print("[robot] software e-stop — motors disabled")
+        else:
+            print("[robot] hold position (DRY_RUN)")
 
     @property
     def current_pose(self) -> RobotPose:
