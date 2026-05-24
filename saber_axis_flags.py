@@ -73,6 +73,12 @@ DOE_PRESET_ORDER: tuple[str, ...] = (
 )
 
 
+def list_axis_presets() -> list[str]:
+    return list(DOE_PRESET_ORDER) + [
+        k for k in sorted(PRESETS.keys()) if k not in DOE_PRESET_ORDER
+    ]
+
+
 def apply_axis_preset(name: str) -> list[str]:
     """Reset axis flags, apply preset; returns human-readable enabled list."""
     key = name.strip().lower()
