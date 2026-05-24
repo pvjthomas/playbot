@@ -24,6 +24,12 @@ CAMERA_INDEX = 0              # laptop / fallback when CAMERA_SOURCE is "auto" w
 CAMERA_WIDTH = 1280           # opencv path: native was 1632x1224; lower if FPS still low
 CAMERA_HEIGHT = 720
 CAMERA_FPS = 30
+# Horizontal mirror (selfie flip) per camera — see camera_mirror.py, camera_calibrate_mirror.py
+# True = raise RIGHT hand → appears on RIGHT side of screen (typical MacBook preview)
+# False = raise RIGHT hand → appears on LEFT side of screen (true camera view)
+# Run: python camera_calibrate_mirror.py --camera laptop
+CAMERA_MIRROR_BY_SOURCE: dict[str, bool] = {}  # e.g. {"laptop": True, "piper": False}
+CAMERA_APPLY_MIRROR_CORRECTION = False  # flip frames to canonical view when mirror_preview True
 USE_FAKE_ATTACKS = False  # True = cycle fake directions (no MediaPipe needed)
 FAKE_ATTACK_CYCLE_SEC = 2.0
 
@@ -44,6 +50,23 @@ SIDE_MARGIN = 0.12      # cross-body reach → "left" / "right"
 EXTENSION_MIN = 0.18    # min arm extension (filters "none")
 # "center" uses SIDE_MARGIN * 0.4 in vision.py — both wrists at midline
 
+# Temporal swing (swing_tracker.py — Milestone 2)
+SWING_HISTORY_SEC = 0.6           # landmark ring buffer window
+SWING_WRIST_MERGE_DIST = 0.12       # two-hand grip midpoint when wrists close
+SWING_BEGIN_VELOCITY = 0.35         # norm coords/s — motion starts
+SWING_IDLE_VELOCITY = 0.12          # below this → swing cooling down
+SWING_IDLE_FRAMES = 6               # consecutive slow frames before idle
+SWING_BEGIN_MAX_SEC = 0.15          # max wind-up duration before mid
+SWING_MID_SPEED_RATIO = 0.45        # fraction of session peak speed → mid
+SWING_MID_EXT_RATIO = 0.72          # extension vs peak → likely past mid
+SWING_END_EXT_RATIO = 0.88          # extension near peak → end phase
+SWING_END_SPEED_RATIO = 0.50        # decelerating into end
+SWING_DIRECTION_MIN = 0.06          # min displacement for direction label
+SWING_AXIS_DOMINANCE = 1.35         # lateral vs vertical axis winner
+SWING_THRUST_EXT_MIN = 0.05         # min extension gain for thrust
+SWING_THRUST_LATERAL_MAX = 0.05    # max lateral travel for thrust
+SWING_THRUST_VERTICAL_MAX = 0.08   # max vertical travel for thrust (not overhead)
+
 ENABLE_YOLO = False
 YOLO_EVERY_N_FRAMES = 5
 YOLO_MODEL = "yolov8n.pt"
@@ -63,7 +86,7 @@ SABER_TIP_HSV_HIGH = None
 SABER_COLOR_HSV_RANGES = None  # list of (low, high) BGR HSV tuples, e.g. redtoy profile
 SABER_COLOR_SEARCH_RADIUS_PX = 35  # lateral search width along forearm ray
 SABER_MIN_COLOR_PIXELS = 20  # min red pixels to trust color tip over geometry
-SABER_MODEL = ""  # path to trained yolov8 weights, e.g. ../models/lightsaber.pt
+SABER_MODEL = "../models/saber_runs/redtoy_25shot-2/weights/best.pt"  # 25 manual green boxes
 SABER_YOLO_MAX_GRIP_DIST_PX = 120
 
 # --- App (Developer 3) ---

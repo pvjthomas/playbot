@@ -6,26 +6,29 @@ Strike directions (partner faces the webcam)
 All labels describe the *partner in frame* — the person the camera sees.
 The PiPER arm blocks as if standing behind the camera, facing the partner.
 
+Timing — END pose (not motion path):
+  A strike is a sequence (L→R, overhead→down, chest→out). We label the committed
+  END of the motion — peak extension — not wind-up or mid-swing.
+  detect_attack() reads one frame only (no motion history); same END-pose rule.
+  See directions.py (STRIKE_CAPTURE_PHASE) and SABER-TRAINING.md.
+
+  Planned (Milestone 2): temporal begin/mid/end + linear vs thrust — see
+  directions.py § Temporal swing estimation and task-vision.md Milestone 2.
+
   none   — No attack. Arms relaxed at sides, or pose not tracked.
 
-  left   — Partner's right arm crosses toward the LEFT side of the image
-           (a strike coming from your right-hand side toward your left).
+  left   — END toward the LEFT side of the image (right arm extended past center).
            Detection: right wrist past body center, extended.
 
-  right  — Partner's left arm crosses toward the RIGHT side of the image
-           (a strike coming from your left-hand side toward your right).
+  right  — END toward the RIGHT side of the image (left arm extended past center).
            Detection: left wrist past body center, extended.
 
-  high   — Overhead strike. Either wrist rises clearly above the shoulders
-           (downward chop or overhead swing at the robot).
+  high   — END of overhead arc — wrist above shoulders (top of chop, not travel).
            Detection: wrist y above shoulder line.
 
-  center — Straight-on threat: BOTH hands extended near the body's midline,
-           aimed at the camera (thrust, push, or two-hand lunge — not a
-           side swipe). Robot responds with GUARD_CENTER, not a side block.
+  center — END of thrust — BOTH hands fully extended at midline toward camera
+           (not retracted at chest). Robot responds with GUARD_CENTER.
            Detection: both wrists near center_x, arms extended.
-           Tip: stand square to the camera, punch forward with both hands
-           near your chest line — not the same as left/right.
 
   low    — Not implemented yet (planned: wrist below hips / waist strike).
            Always returns "none" for now.
@@ -54,7 +57,8 @@ import cv2
 import mediapipe as mp
 
 import config
-from contracts import AttackDirection, Frame
+from contracts import AttackDirection, Frame, SwingState
+from swing_tracker import SwingTracker, sample_from_landmarks
 
 _NOSE = 0
 _LEFT_SHOULDER = 11
@@ -80,6 +84,8 @@ class AttackVision:
         high_margin: float | None = None,
         side_margin: float | None = None,
         extension_min: float | None = None,
+        *,
+        static_image_mode: bool = False,
     ):
         self.high_margin = config.HIGH_MARGIN if high_margin is None else high_margin
         self.side_margin = config.SIDE_MARGIN if side_margin is None else side_margin
@@ -92,12 +98,15 @@ class AttackVision:
         self._fake_cycle = itertools.cycle(_FAKE_SEQUENCE)
         self._fake_next_at = time.monotonic()
         self._fake_current: AttackDirection = "none"
+        self._swing_tracker = SwingTracker()
+        self._last_swing = SwingState(direction="none", phase="idle", kind="none")
+        self._fake_swing_phase = 0
 
         if not config.USE_FAKE_ATTACKS:
             self._pose = mp.solutions.pose.Pose(
-                static_image_mode=False,
+                static_image_mode=static_image_mode,
                 model_complexity=0,
-                smooth_landmarks=True,
+                smooth_landmarks=not static_image_mode,
                 min_detection_confidence=0.5,
                 min_tracking_confidence=0.5,
             )
@@ -105,11 +114,40 @@ class AttackVision:
     def detect_attack(self, frame: Frame) -> AttackDirection:
         if config.USE_FAKE_ATTACKS:
             self._last_direction = self._fake_attack()
+            self._last_swing = self._fake_swing()
             return self._last_direction
 
         direction = self._mediapipe_attack(frame)
         self._last_direction = direction
         return direction
+
+    def detect_swing(self, frame: Frame) -> SwingState:
+        """Temporal begin/mid/end + linear vs thrust (Milestone 2)."""
+        if config.USE_FAKE_ATTACKS:
+            self._last_swing = self._fake_swing()
+            return self._last_swing
+
+        if self._pose is None or frame is None:
+            self._last_swing = self._swing_tracker.update(None)
+            return self._last_swing
+
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        result = self._pose.process(rgb)
+        self._last_landmarks = result.pose_landmarks
+
+        if not result.pose_landmarks:
+            self._last_swing = self._swing_tracker.update(None)
+            return self._last_swing
+
+        sample = sample_from_landmarks(
+            result.pose_landmarks.landmark, time.monotonic()
+        )
+        self._last_swing = self._swing_tracker.update(sample)
+        return self._last_swing
+
+    @property
+    def last_swing(self) -> SwingState:
+        return self._last_swing
 
     @property
     def last_direction(self) -> AttackDirection:
@@ -121,6 +159,18 @@ class AttackVision:
             self._fake_current = next(self._fake_cycle)
             self._fake_next_at = now + config.FAKE_ATTACK_CYCLE_SEC
         return self._fake_current
+
+    def _fake_swing(self) -> SwingState:
+        phases: list[str] = ["idle", "begin", "mid", "end", "idle"]
+        kinds: list[str] = ["none", "linear", "linear", "linear", "none"]
+        dirs: list[AttackDirection] = ["none", "left", "left", "left", "none"]
+        idx = self._fake_swing_phase % len(phases)
+        self._fake_swing_phase = (self._fake_swing_phase + 1) % len(phases)
+        return SwingState(
+            direction=dirs[idx],
+            phase=phases[idx],  # type: ignore[arg-type]
+            kind=kinds[idx],  # type: ignore[arg-type]
+        )
 
     def _mediapipe_attack(self, frame: Frame) -> AttackDirection:
         if self._pose is None or frame is None:
@@ -206,6 +256,11 @@ def _run_vision_preview():
         action="store_true",
         help="Use DepthAugmentedAttackVision (needs --orbbec-sdk)",
     )
+    parser.add_argument(
+        "--temporal",
+        action="store_true",
+        help="Show swing phase/kind overlay (Milestone 2)",
+    )
     args = parser.parse_args()
     configure_camera_from_args(args)
 
@@ -235,11 +290,13 @@ def _run_vision_preview():
                 direction = detector.detect_attack(frame, frameset=frameset)
             else:
                 direction = detector.detect_attack(frame)
+            swing = detector.detect_swing(frame) if args.temporal else None
             preview = overlay.render(
                 frame,
                 direction,
                 fps=fps,
                 pose=detector.last_landmarks,
+                swing=swing,
             )
             cv2.imshow("Vision Dev Preview", preview)
             if cv2.waitKey(1) & 0xFF == ord("q"):

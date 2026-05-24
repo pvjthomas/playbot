@@ -76,6 +76,12 @@ import cv2
 import numpy as np
 
 import config
+from camera_mirror import (
+    active_camera_source_key,
+    apply_mirror_correction,
+    get_mirror_preview,
+    normalize_source_key,
+)
 
 # Piper kit ships with Orbbec Dabai DC1 (UVC). Same device on Mac and Linux.
 _PIPER_CAMERA_NAMES = ("dabai", "orbbec", "dc1", "uvc camera vendorid_11205")
@@ -408,6 +414,18 @@ def configure_camera_from_args(args) -> None:
     configure_orbbec_from_args(args)
 
 
+def _log_mirror_state(source_key: str) -> None:
+    state = get_mirror_preview(source_key)
+    if state is None:
+        print(
+            f"[camera] Mirror unknown for {source_key!r} — "
+            f"run: python camera_calibrate_mirror.py --camera {source_key}"
+        )
+    else:
+        kind = "mirror/selfie" if state else "true (not mirrored)"
+        print(f"[camera] Mirror for {source_key!r}: {kind}")
+
+
 def open_camera(index: int | str | None = None):
     """
     Factory: Orbbec SDK when ``ENABLE_ORBBEC_SDK`` else ``Camera``.
@@ -581,10 +599,12 @@ class Camera:
             name = _avfoundation_device_name(self.source)
             self._ffmpeg_cam = _FfmpegAvFoundationCamera(name)
             self.index = -1
+            self.source_key = active_camera_source_key(self.source)
             print(
                 f"[camera] Using AVFoundation {name!r} "
                 f"({self._ffmpeg_cam.width}x{self._ffmpeg_cam.height}) via ffmpeg"
             )
+            _log_mirror_state(self.source_key)
             return
 
         self._cap = _open_capture(self.source)
@@ -617,13 +637,17 @@ class Camera:
         self.index = self.source if isinstance(self.source, int) else -1
         w = int(self._cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         h = int(self._cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        self.source_key = active_camera_source_key(self.source)
         print(f"[camera] Using OpenCV source {self.source!r} ({w}x{h})")
+        _log_mirror_state(self.source_key)
 
     def read_frame(self):
         if self._ffmpeg_cam is not None:
-            return self._ffmpeg_cam.read_frame()
-        ok, frame = self._cap.read()
-        return frame if ok else None
+            frame = self._ffmpeg_cam.read_frame()
+        else:
+            ok, frame = self._cap.read()
+            frame = frame if ok else None
+        return apply_mirror_correction(frame, getattr(self, "source_key", None))
 
     def release(self):
         if self._ffmpeg_cam is not None:

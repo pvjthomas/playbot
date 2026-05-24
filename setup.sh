@@ -17,6 +17,10 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 
 echo ""
+echo "Optional vision training (Roboflow + saber YOLO):"
+echo "  pip install -r requirements-vision.txt"
+echo "  export ROBOFLOW_API_KEY=...   # https://app.roboflow.com/settings/api"
+echo ""
 echo "Optional Orbbec RGB-D SDK (depth / IR):"
 echo "  pip install -r requirements-orbbec.txt"
 echo "  python orbbec_preview.py"

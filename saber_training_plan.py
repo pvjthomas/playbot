@@ -57,43 +57,47 @@ REDTOY_SESSION: list[CollectionPose] = [
     CollectionPose(
         "d_l2r",
         "diagonal",
-        "Diagonal — tip up toward your left shoulder (↗)",
+        "Diagonal — blade angled up toward the LEFT side of the image (↖ on screen)",
         6,
         "Orientations",
     ),
     CollectionPose(
         "d_r2l",
         "diagonal",
-        "Diagonal — tip up toward your right shoulder (↖)",
+        "Diagonal — blade angled up toward the RIGHT side of the image (↗ on screen)",
         6,
         "Orientations",
     ),
-    # Phase 2 — strike-like (matches attack directions later)
+    # Phase 2 — strike END poses (names match AttackDirection = IMAGE direction)
     CollectionPose(
         "strike_high",
         "vertical",
-        "Overhead strike — raise saber above head, as if chopping down",
+        "Attack HIGH — top of overhead chop; HOLD saber above head (END of raise, "
+        "vision label 'high')",
         6,
         "Strike poses",
     ),
     CollectionPose(
         "strike_left",
         "diagonal",
-        "Cross strike to YOUR left (saber crosses body toward left side of image)",
+        "Attack LEFT — swing to IMAGE LEFT, then HOLD the END: saber fully extended "
+        "toward the LEFT edge of the screen (not wind-up; → robot BLOCK_LEFT)",
         6,
         "Strike poses",
     ),
     CollectionPose(
         "strike_right",
         "diagonal",
-        "Cross strike to YOUR right (saber toward right side of image)",
+        "Attack RIGHT — swing to IMAGE RIGHT, then HOLD the END: saber fully extended "
+        "toward the RIGHT edge of the screen (not wind-up; → robot BLOCK_RIGHT)",
         6,
         "Strike poses",
     ),
     CollectionPose(
         "strike_center",
         "vertical",
-        "Thrust forward — saber points straight at the camera",
+        "Attack CENTER — thrust out to full extension at camera, HOLD the END "
+        "(vision label 'center')",
         6,
         "Strike poses",
     ),

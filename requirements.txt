@@ -2,6 +2,9 @@
 
 # Optional Orbbec RGB-D SDK (depth / IR) — not required for default OpenCV/ffmpeg capture:
 #   pip install -r requirements-orbbec.txt
+#
+# Optional vision training / Roboflow (saber YOLO labeling + export):
+#   pip install -r requirements-vision.txt
 
 # PiPER arm — Linux SocketCAN; macOS candleLight needs gs_usb extra (see MAC-ROBOT.md)
 piper_sdk>=0.6.0

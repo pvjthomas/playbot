@@ -6,11 +6,24 @@ Do not import across team boundaries (vision ↔ robot ↔ app) except via contr
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, Literal, Protocol, runtime_checkable
 
 # --- Shared types ---
+#
+# Attack direction semantics (image frame, not body left/right): see directions.py
 
 AttackDirection = Literal["left", "right", "high", "low", "center", "none"]
+
+SwingPhase = Literal["idle", "begin", "mid", "end"]
+MotionKind = Literal["none", "linear", "thrust"]
+
+
+@dataclass(frozen=True)
+class SwingState:
+    direction: AttackDirection
+    phase: SwingPhase
+    kind: MotionKind
 
 RobotPose = Literal[
     "HOME",
@@ -49,6 +62,8 @@ def pose_for_attack(direction: AttackDirection) -> RobotPose | None:
 @runtime_checkable
 class AttackDetector(Protocol):
     def detect_attack(self, frame: Frame) -> AttackDirection: ...
+
+    def detect_swing(self, frame: Frame) -> SwingState: ...
 
 
 @runtime_checkable

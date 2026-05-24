@@ -1,0 +1,12 @@
+{
+  "laptop": {
+    "mirror_preview": false,
+    "calibrated_at": "2026-05-23T22:51:32.795019+00:00",
+    "note": "right-hand-up calibration"
+  },
+  "piper": {
+    "mirror_preview": false,
+    "calibrated_at": "2026-05-23T22:54:24.691759+00:00",
+    "note": "right-hand-up calibration"
+  }
+}

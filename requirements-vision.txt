@@ -1,0 +1,7 @@
+# Vision training / labeling — optional (saber YOLO pipeline only)
+# Install: pip install -r requirements-vision.txt
+#
+# Direction definitions (attacks vs training folders): directions.py, SABER-TRAINING.md
+# Set API key: export ROBOFLOW_API_KEY=your_key   (https://app.roboflow.com/settings/api)
+
+roboflow>=1.1.0

@@ -4,6 +4,10 @@ Lightsaber as a tubular segment: grip (wrist) → tip.
 Phase 1 (now): forearm direction from MediaPipe + optional color tip refine.
 Phase 2 (later): custom YOLO weights in SABER_MODEL, matched to nearest wrist.
 
+Tip visibility: ``_saber_from_arm`` may place tip outside the image (unclamped).
+Color refine stops at frame edges. YOLO merge extrapolates tip from grip + bbox angle.
+``SaberLine`` has no tip-visible flag yet — see task-vision.md § Tip in/out of frame.
+
 Not used in main.py fight loop until team enables it.
 """
 
