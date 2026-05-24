@@ -4,7 +4,9 @@ Platform-specific PiPER CAN setup.
 Linux (VM or bare metal): SocketCAN ``can0`` via ``gs_usb`` kernel module + ``can-up.sh``.
 macOS: no ``can0`` — candleLight uses python-can ``gs_usb`` (USB userspace), not SocketCAN.
 
-See MAC-ROBOT.md for Mac install and smoke commands.
+This repo uses ``piper_sdk`` (not AgileX's newer ``pyAgxArm``, which is intended for
+Mac-native use with serial/SLCAN CAN hardware). The Linux VM path is a workaround for
+the kit candleLight adapter on Mac — see MAC-ROBOT.md and ubuntu_shared/MAC-QEMU-ROBOT-VM.md.
 """
 
 from __future__ import annotations

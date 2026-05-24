@@ -4,6 +4,8 @@ End-to-end guide for running the **AgileX PiPER** arm from a **Mac** using a **U
 
 **Why QEMU:** Apple **Virtualize** VMs are fast but **cannot** pass USB to the guest. Robot CAN **requires** QEMU + USB sharing. See [USB-PASSTHROUGH.md](USB-PASSTHROUGH.md).
 
+> **SDK note (`piper_sdk` vs `pyAgxArm`):** AgileX’s newer **[pyAgxArm](https://github.com/agilexrobotics/pyAgxArm)** driver is the intended successor to **`piper_sdk`** and is meant to support Mac natively (AgileX docs focus on **serial/SLCAN** CAN modules on macOS, not the kit **candleLight**). **This repo still uses `piper_sdk`** because our PiPER kit ships candleLight (`1d50:606f`), which works on **Linux SocketCAN** but not reliably on native Mac (`gs_usb` often blocked). The **QEMU VM below is a practical workaround** for this hardware — not AgileX’s long-term Mac-native path. A future migration to `pyAgxArm` may reduce or remove the need for a Linux VM.
+
 **Split workflow (recommended):**
 
 | Task | Where |

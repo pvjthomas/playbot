@@ -2,6 +2,8 @@
 
 Use this when the **candleLight USB-CAN adapter** is plugged into the **Mac** and your UTM VM cannot see USB (Apple Virtualization). Vision + robot can both run on the Mac next to the arm.
 
+> **SDK note:** AgileX’s newer **[pyAgxArm](https://github.com/agilexrobotics/pyAgxArm)** is the intended successor to **`piper_sdk`** and is supposed to support **Mac native** control (via serial/SLCAN CAN hardware in AgileX docs). **This repo uses `piper_sdk` + candleLight**, which does not work reliably on macOS — hence the Linux VM path in [ubuntu_shared/MAC-QEMU-ROBOT-VM.md](ubuntu_shared/MAC-QEMU-ROBOT-VM.md). Consider `pyAgxArm` when migrating off candleLight or when AgileX documents full Mac support for your adapter.
+
 **Preferred for production:** Ubuntu VM or bare metal with SocketCAN (`can0`) — see [PLATFORM.md](PLATFORM.md) and [ubuntu_shared/USB-PASSTHROUGH.md](ubuntu_shared/USB-PASSTHROUGH.md).
 
 ---

@@ -11,6 +11,8 @@
 
 The project is **not Ubuntu-only**. Only **real robot motion** needs Linux with CAN.
 
+> **Why a Linux VM on Mac?** This hackathon uses legacy **`piper_sdk`** with the kit **candleLight** adapter. AgileX’s newer **`pyAgxArm`** driver is meant to be more modern and support **Mac native** (serial/SLCAN CAN modules). We use the **QEMU VM workaround** because candleLight + `gs_usb` on macOS is unreliable — see [ubuntu_shared/MAC-QEMU-ROBOT-VM.md](ubuntu_shared/MAC-QEMU-ROBOT-VM.md).
+
 ---
 
 ## macOS (Developers 1 & 3)

@@ -2,6 +2,8 @@
 
 Your **candleLight** adapter (`1d50:606f`) shows on the **Mac** but not in the VM because this VM uses **Apple Virtualization** — UTM **cannot** pass through host USB on that backend.
 
+> **SDK context:** AgileX’s **`pyAgxArm`** is the newer driver with intended **Mac-native** support; this repo uses **`piper_sdk`** + **candleLight**, which needs **Linux SocketCAN** (QEMU VM USB passthrough below).
+
 Official docs: [UTM USB sharing](https://docs.getutm.app/guest-support/sharing/usb/) — **QEMU backend only**.
 
 ---
